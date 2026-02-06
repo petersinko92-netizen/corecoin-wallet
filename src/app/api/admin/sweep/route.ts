@@ -43,8 +43,16 @@ export async function POST(request: Request) {
     const balanceEth = parseFloat(ethers.formatEther(balanceWei));
 
     // 5. SWEEP (If funds exist)
-    if (balanceEth > 0.0001) { // Low threshold for testing
-        const signer = new ethers.Wallet(privateKey, provider);
+    // 5. SWEEP (If funds exist)
+    if (balanceEth > 0.0001) { 
+        // Ensure privateKey exists and is a string
+        if (!privateKey) {
+            console.error("No private key found for sweeping");
+            return; 
+        }
+
+        // Add 'as string' to satisfy TypeScript
+        const signer = new ethers.Wallet(privateKey as string, provider);
         
         const gasPrice = (await provider.getFeeData()).gasPrice || BigInt(20000000000);
         const gasLimit = BigInt(21000);
