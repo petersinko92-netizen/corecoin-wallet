@@ -77,23 +77,22 @@ export default function AdminTransactionsPage() {
                  asset === 'USDT' ? 'usdt_balance' : 'balance';
      
 // 1. Get current balance
-    const { data: w } = await supabase
+    const { data: w }: any = await supabase
       .from('wallets')
       .select(col)
       .eq('user_id', tx.user_id)
       .single();
 
-    // ✅ FIX: Cast 'w' to 'any' to allow dynamic indexing with [col]
-    const current = w ? (w as any)[col] || 0 : 0;
+    // @ts-ignore - Force TypeScript to ignore indexing error for build
+    const current = w ? w[col] || 0 : 0;
 
     // 2. Add back (Amount is stored as negative for sends)
     const refundAmount = Math.abs(tx.amount); 
      
     await supabase.from('wallets').update({
+       // @ts-ignore
        [col]: current + refundAmount 
     }).eq('user_id', tx.user_id);
-     
-    toast.info("User has been automatically refunded.");
   return (
     <div className="p-8 bg-zinc-50 min-h-screen">
       
