@@ -4,17 +4,21 @@ import { X, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SendModalProps {
+  wallet: any; // ✅ Added to match Dashboard
+  prices: Record<string, number>; // ✅ Added to match Dashboard
   onClose: () => void;
-  onSuccess: () => void;
-  balance: number; 
+  onSuccess: () => Promise<void>; // ✅ Match the async fetchData function
 }
 
-export function SendModal({ onClose, onSuccess, balance }: SendModalProps) {
+export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps) {
   const [step, setStep] = useState<'details' | 'pin'>('details');
   const [toAddress, setToAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Use the balance from the wallet object
+  const balance = wallet?.balance || 0;
 
   const handleSubmitDetails = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +51,7 @@ export function SendModal({ onClose, onSuccess, balance }: SendModalProps) {
 
       if (data.success) {
         toast.success(`Sent ${amount} ETH successfully!`);
-        onSuccess(); // Refresh dashboard
+        await onSuccess(); // Refresh dashboard
         onClose();
       } else {
         toast.error(data.error || "Transaction Failed");
@@ -110,7 +114,6 @@ export function SendModal({ onClose, onSuccess, balance }: SendModalProps) {
           </form>
 
         ) : (
-          // PIN STEP
           <div className="text-center">
             <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-500">
                <ShieldCheck size={24} />
