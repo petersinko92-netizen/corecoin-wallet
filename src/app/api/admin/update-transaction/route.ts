@@ -1,45 +1,30 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/next';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const { id, status } = await req.json();
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll() { return cookieStore.getAll() } } }
+    );
 
-    // 1. GET THE TRANSACTION FIRST
-    // We need to know the amount and who sent it
-    const { data: tx, error: fetchError } = await supabase
+    const { transactionId, status, userId, amount, asset } = await request.json();
+
+    // 1. Update Transaction Status
+    const { error: txError } = await supabase
       .from('transactions')
-      .select('*')
-      .eq('id', id)
-      .single();
+      .update({ status })
+      .eq('id', transactionId);
 
-    if (fetchError || !tx) {
-      return NextResponse.json({ success: false, error: "Transaction not found" }, { status: 404 });
-    }
+    if (txError) throw txError;
 
-    // 2. SECURITY CHECK: PREVENT DOUBLE REFUNDS
-    // If it's already "failed" or "completed", don't touch it again.
-    if (tx.status === 'failed' || tx.status === 'completed') {
-      return NextResponse.json({ success: false, error: "Transaction already finalized" }, { status: 400 });
-    }
-
-    // 3. IF REJECTING -> PROCESS REFUND
+    // 2. Handle Refund if Failed
     if (status === 'failed') {
-      const userId = tx.user_id;
-      const amountToRefund = Math.abs(tx.amount); // Convert -50 to 50
-      const asset = tx.currency;
-
-      // Determine which wallet column to refund to
-      let balanceField = 'balance'; // Default ETH
-      if (asset === 'BTC') balanceField = 'btc_balance';
-      if (asset === 'USDT') balanceField = 'usdt_balance';
-      if (asset === 'SOL') balanceField = 'sol_balance';
-      if (asset === 'TRX') balanceField = 'trx_balance';
+      const balanceField = asset === 'BTC' ? 'btc_balance' : asset === 'USDT' ? 'usdt_balance' : 'balance';
+      const amountToRefund = Math.abs(amount);
 
       // Get current wallet balance
       const { data: wallet } = await supabase
@@ -48,7 +33,7 @@ export async function POST(req: Request) {
         .eq('user_id', userId)
         .single();
 
-      // ✅ FIX: Cast 'wallet' to 'any' to allow dynamic indexing with [balanceField]
+      // Casting to any to fix the TypeScript indexing error for Vercel
       const currentBalance = wallet ? (wallet as any)[balanceField] || 0 : 0;
       const newBalance = currentBalance + amountToRefund;
 
@@ -61,19 +46,15 @@ export async function POST(req: Request) {
       if (refundError) throw new Error("Refund failed: " + refundError.message);
       
       console.log(`REFUND SUCCESS: Returned ${amountToRefund} ${asset} to ${userId}`);
-
-    // 4. FINALLY, UPDATE THE STATUS TAG
-    const { error: updateError } = await supabase
-      .from('transactions')
-      .update({ status })
-      .eq('id', id);
-
-    if (updateError) throw updateError;
+    }
 
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
     console.error("Update Error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
   }
 }
