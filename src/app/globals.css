@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  /* ... Keep your existing colors ... */
+  --color-background: #050505;
+  --color-foreground: #ededed;
+  
+  --color-primary: #10b981;
+  --color-primary-hover: #059669;
+  
+  --color-surface: #0f0f10;
+  --color-surface-border: #27272a;
+
+  /* 1. SCROLL ANIMATION (For the Ticker) */
+  --animate-scroll: scroll 30s linear infinite;
+  
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* 2. FLOAT ANIMATION (For the Phone) */
+  --animate-float: float 6s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+  
+  /* 3. FONT SETUP */
+  --font-outfit: var(--font-outfit);
+}
+
+/* ... Keep the rest of your default CSS below ... */
+:root {
+  --background: #050505;
+  --foreground: #ededed;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-inter), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Utilities */
+@utility scrollbar-hide {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
