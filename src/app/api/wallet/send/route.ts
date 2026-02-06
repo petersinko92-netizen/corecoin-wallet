@@ -53,7 +53,9 @@ export async function POST(request: Request) {
     const balance = await provider.getBalance(wallet.address);
     // Estimate standard gas (21000) * gasPrice
     const feeData = await provider.getFeeData();
-    const gasCost = 21000n * (feeData.gasPrice || 1n);
+   // Replace: const gasCost = 21000n * (feeData.gasPrice || 1n);
+// With this:
+const gasCost = BigInt(21000) * (feeData.gasPrice || BigInt(1));
 
     if (balance < (amountWei + gasCost)) {
       return NextResponse.json({ error: 'Insufficient ETH for transaction + gas fees' }, { status: 400 });
