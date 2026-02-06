@@ -48,7 +48,8 @@ export async function POST(req: Request) {
         .eq('user_id', userId)
         .single();
 
-      const currentBalance = wallet?.[balanceField] || 0;
+      // ✅ FIX: Cast 'wallet' to 'any' to allow dynamic indexing with [balanceField]
+      const currentBalance = wallet ? (wallet as any)[balanceField] || 0 : 0;
       const newBalance = currentBalance + amountToRefund;
 
       // Update the Wallet
@@ -60,7 +61,6 @@ export async function POST(req: Request) {
       if (refundError) throw new Error("Refund failed: " + refundError.message);
       
       console.log(`REFUND SUCCESS: Returned ${amountToRefund} ${asset} to ${userId}`);
-    }
 
     // 4. FINALLY, UPDATE THE STATUS TAG
     const { error: updateError } = await supabase
