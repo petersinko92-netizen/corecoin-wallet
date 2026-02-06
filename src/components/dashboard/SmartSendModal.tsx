@@ -38,7 +38,6 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
-  // GAS WALL STATE
   const [ethBalance, setEthBalance] = useState<number>(0);
   const [isGasLoading, setIsGasLoading] = useState(true);
 
@@ -46,14 +45,12 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
   const [amount, setAmount] = useState('');
   const [selectedNetwork, setSelectedNetwork] = useState(NETWORKS[asset]?.[0] || { name: 'Network', short: 'NET', fee: 0, time: '' });
 
-  // 1. CHECK GAS WALLET (ETH)
   useEffect(() => {
     const checkGas = async () => {
       setIsGasLoading(true);
-      // Logic: Only check ETH balance if sending ETH or USDT
       if (asset !== 'ETH' && asset !== 'USDT') {
         setIsGasLoading(false);
-        setEthBalance(999); // Bypass check for other chains
+        setEthBalance(999); 
         return;
       }
       try {
@@ -67,13 +64,10 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
     checkGas();
   }, [asset, supabase]);
 
-  // --- DYNAMIC FEE LOGIC ---
   const numAmount = parseFloat(amount) || 0;
   
   const finalFee = useMemo(() => {
      let baseFee = selectedNetwork.fee;
-     
-     // STRICT FEE LOGIC RESTORED
      if (selectedNetwork.short === 'ERC20' || asset === 'ETH') {
          if (asset === 'ETH') {
              if (numAmount >= 10) return 0.65;
@@ -86,20 +80,17 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
          }
      }
      return baseFee;
-  }, [amount, asset, selectedNetwork, numAmount]);
+  }, [numAmount, asset, selectedNetwork]);
 
   const totalDeduction = numAmount + finalFee;
-  
-  // ✅ GAS WALL RESTORED: Must have > 3.0 ETH to send
   const isGasRestricted = (asset === 'ETH' || asset === 'USDT') && (ethBalance < 3.0);
   const isAddressValid = address.length > 20; 
   const isAmountValid = numAmount > 0;
   const isInsufficient = totalDeduction > balance; 
-  
   const canProceed = !isGasLoading && !isGasRestricted && isAddressValid && isAmountValid && !isInsufficient;
 
   const handleMax = () => {
-    const max = Math.max(0, balance - selectedNetwork.fee);
+    const max = Math.max(0, balance - finalFee);
     setAmount(max > 0 ? max.toFixed(6) : '0');
   };
 
@@ -121,10 +112,8 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
       if (!user) throw new Error("Authentication Error");
 
       if (isGasRestricted) throw new Error("Insufficient ETH for network fees (Min 3.0 ETH required)");
-      if (totalDeduction > balance) throw new Error("Insufficient Balance");
 
       // 1. INSERT TRANSACTION
-      // Using metadata JSONB to properly store the fee info
       const { error: txError } = await supabase.from('transactions').insert({
         user_id: user.id,
         type: 'withdrawal',
@@ -134,10 +123,9 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
         metadata: { 
            network: selectedNetwork.name, 
            fee: finalFee.toString(),
-           to_address: address,
-           description: `Sent to ${address.slice(0, 6)}...`
+           to_address: address
         },
-        description: `Sent to ${address.slice(0, 6)}...` // Fallback
+        description: `Sent to ${address.slice(0, 6)}...`
       });
       
       if (txError) throw txError;
@@ -149,7 +137,9 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
                            asset === 'TRX' ? 'trx_balance' : 'balance';
 
       const { data: w } = await supabase.from('wallets').select(balanceField).eq('user_id', user.id).single();
-      const currentBal = w?.[balanceField] || 0;
+      
+      // ✅ FIX: Use 'as any' to bypass the TypeScript indexing error for Vercel build
+      const currentBal = w ? (w as any)[balanceField] || 0 : 0;
       
       const { error: updateError } = await supabase
         .from('wallets')
@@ -160,9 +150,9 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
 
       onSuccess();
       toast.success("Transaction Sent!");
+      onClose();
 
     } catch (err: any) {
-      console.error("Transaction Error:", err);
       setErrorMsg(err.message || "Unknown error occurred");
       toast.error("Transaction Failed");
     } finally {
@@ -170,7 +160,6 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
     }
   };
 
-  // THEME
   const isDark = theme === 'dark';
   const bgColor = isDark ? 'bg-[#121212]' : 'bg-white';
   const borderColor = isDark ? 'border-white/10' : 'border-slate-100';
@@ -178,10 +167,9 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
   const subTextColor = isDark ? 'text-zinc-500' : 'text-slate-500';
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200 p-0 md:p-4">
+    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200 p-0 md:p-4 text-black">
       <div className={`w-full md:w-[440px] h-[95vh] md:h-auto rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all ${bgColor} ${textColor}`}>
         
-        {/* VIEW 1: FORM */}
         {view === 'form' && (
           <>
             <div className={`flex items-center justify-between p-5 border-b ${borderColor}`}>
@@ -201,7 +189,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
                 
                 {numAmount > 0 && (
                    <div className="text-xs font-mono font-medium opacity-50">
-                      Est. Gas: {finalFee} {asset}
+                     Est. Gas: {finalFee} {asset}
                    </div>
                 )}
                 
@@ -233,7 +221,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
               <div className={`rounded-2xl border overflow-hidden ${borderColor}`}>
                 <div className={`p-4 flex items-center gap-3 border-b ${borderColor}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}><Wallet size={16} className={subTextColor} /></div>
-                  <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Paste Address" className="flex-1 bg-transparent outline-none text-sm font-medium font-mono"/>
+                  <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Paste Address" className="flex-1 bg-transparent outline-none text-sm font-medium font-mono text-black dark:text-white"/>
                   {!address && <button onClick={handlePaste} className="text-[10px] font-bold bg-emerald-500/10 text-emerald-500 px-2.5 py-1.5 rounded-lg">PASTE</button>}
                 </div>
                 <button onClick={() => setView('networks')} className={`w-full p-4 flex items-center justify-between transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}>
@@ -256,7 +244,6 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
           </>
         )}
 
-        {/* VIEW 2: NETWORKS */}
         {view === 'networks' && (
            <>
               <div className={`flex items-center gap-3 p-5 border-b ${borderColor}`}>
@@ -277,19 +264,18 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
            </>
         )}
 
-        {/* VIEW 3: REVIEW */}
         {view === 'review' && (
            <>
               <div className={`flex items-center gap-3 p-5 border-b ${borderColor}`}>
                  <button onClick={() => setView('form')} className={`p-2 rounded-full ${isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'}`}>
                     <ArrowLeft size={20} />
                  </button>
-                 <span className="font-bold text-lg mx-auto pr-8">Review Transfer</span>
+                 <span className="font-bold text-lg mx-auto pr-8 text-black dark:text-white">Review Transfer</span>
               </div>
 
               <div className="flex-1 p-6 overflow-y-auto">
                  <div className="text-center mb-8">
-                    <h1 className="text-5xl font-black tracking-tighter mb-1">
+                    <h1 className="text-5xl font-black tracking-tighter mb-1 text-black dark:text-white">
                        {numAmount} <span className={`text-2xl ${subTextColor}`}>{asset}</span>
                     </h1>
                  </div>
