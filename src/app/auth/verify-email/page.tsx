@@ -1,21 +1,20 @@
 "use client";
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase';
 
-// ⚙️ CONFIGURATION: Change this to 6 or 8 depending on what you receive
 const OTP_LENGTH = 8; 
 
-export default function VerifyEmailPage() {
+// 1. Logic moved here to be wrapped in Suspense
+function VerifyEmailForm() {
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
   
-  // Dynamic State based on Length
   const [otp, setOtp] = useState(new Array(OTP_LENGTH).fill(''));
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -24,7 +23,6 @@ export default function VerifyEmailPage() {
 
   useEffect(() => { inputRefs.current[0]?.focus(); }, []);
 
-  // --- HANDLE INPUT ---
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp];
@@ -46,7 +44,6 @@ export default function VerifyEmailPage() {
     if (pasteData.length > 0) inputRefs.current[Math.min(pasteData.length, OTP_LENGTH - 1)]?.focus();
   };
 
-  // --- VERIFY FUNCTION ---
   const handleVerify = async () => {
     const token = otp.join('');
     if (token.length !== OTP_LENGTH || !email) return;
@@ -63,7 +60,7 @@ export default function VerifyEmailPage() {
     if (error) {
       setError(error.message);
       setLoading(false);
-      setOtp(new Array(OTP_LENGTH).fill('')); // Clear inputs
+      setOtp(new Array(OTP_LENGTH).fill(''));
       inputRefs.current[0]?.focus();
     } else {
       toast.success("Email verified successfully!");
@@ -71,7 +68,6 @@ export default function VerifyEmailPage() {
     }
   };
 
-  // --- RESEND FUNCTION ---
   const handleResend = async () => {
     if (!email) return;
     setResending(true);
@@ -95,7 +91,6 @@ export default function VerifyEmailPage() {
     setResending(false);
   };
 
-  // Auto-submit
   useEffect(() => {
     if (otp.every(d => d !== '')) handleVerify();
   }, [otp]);
@@ -104,7 +99,6 @@ export default function VerifyEmailPage() {
 
   return (
     <div className="bg-[#0a0a0a]/80 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-xl text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
       <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-500 ring-4 ring-emerald-500/5">
         <Mail size={32} />
       </div>
@@ -121,7 +115,6 @@ export default function VerifyEmailPage() {
          </div>
       )}
 
-      {/* DYNAMIC OTP INPUTS */}
       <div className="flex justify-center gap-2 mb-8">
         {otp.map((digit, index) => (
           <input
@@ -133,7 +126,6 @@ export default function VerifyEmailPage() {
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={handlePaste}
-            // Dynamic width calculation to keep them fitting nicely
             className={`
               ${OTP_LENGTH > 6 ? 'w-10 h-12 text-lg' : 'w-12 h-14 text-xl'} 
               bg-[#050505] border ${digit ? 'border-emerald-500' : 'border-white/10'} 
@@ -169,7 +161,22 @@ export default function VerifyEmailPage() {
            <ArrowLeft size={16} /> Back to Log In
         </Link>
       </div>
+    </div>
+  );
+}
 
+// 2. Main Export with Suspense Wrapper
+export default function VerifyEmailPage() {
+  return (
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
+      <Suspense fallback={
+        <div className="flex flex-col items-center gap-4 text-zinc-500">
+          <Loader2 className="animate-spin" size={32} />
+          <p className="text-sm font-medium">Verifying environment...</p>
+        </div>
+      }>
+        <VerifyEmailForm />
+      </Suspense>
     </div>
   );
 }
