@@ -4,10 +4,10 @@ import { X, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SendModalProps {
-  wallet: any; // ✅ Added to match Dashboard
-  prices: Record<string, number>; // ✅ Added to match Dashboard
+  wallet: any; // ✅ Required to match Dashboard's prop passing
+  prices: Record<string, number>; // ✅ Required to match Dashboard's prop passing
   onClose: () => void;
-  onSuccess: () => Promise<void>; // ✅ Match the async fetchData function
+  onSuccess: () => Promise<void>; // ✅ Match the async fetchData function in Dashboard
 }
 
 export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps) {
@@ -17,15 +17,17 @@ export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Use the balance from the wallet object
+  // Directly pull the balance from the wallet prop passed by the dashboard
   const balance = wallet?.balance || 0;
 
   const handleSubmitDetails = (e: React.FormEvent) => {
     e.preventDefault();
     if (!toAddress || !amount) return;
     
-    // Basic validation
-    if (parseFloat(amount) > balance) {
+    const numAmount = parseFloat(amount);
+
+    // Validation logic
+    if (numAmount > balance) {
       toast.error("Insufficient ETH Balance");
       return;
     }
@@ -51,14 +53,14 @@ export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps
 
       if (data.success) {
         toast.success(`Sent ${amount} ETH successfully!`);
-        await onSuccess(); // Refresh dashboard
+        await onSuccess(); // ✅ Properly await the dashboard refresh
         onClose();
       } else {
         toast.error(data.error || "Transaction Failed");
-        setPin(''); // Reset PIN on error
+        setPin(''); // Reset PIN on error for security
       }
     } catch (e) {
-      toast.error("Network Error");
+      toast.error("Network Error: Could not reach the server.");
     } finally {
       setLoading(false);
     }
@@ -66,17 +68,16 @@ export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps
 
   return (
     <div className="fixed inset-0 z-[9999] bg-[#050505]/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-      
       <div className="bg-[#0a0a0a] border border-white/10 w-full max-w-sm rounded-3xl p-6 relative shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
         
-        <button onClick={onClose} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X size={20} /></button>
+        <button onClick={onClose} className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors">
+          <X size={20} />
+        </button>
 
         <h2 className="text-xl font-bold text-white mb-6">Send ETH</h2>
 
         {step === 'details' ? (
           <form onSubmit={handleSubmitDetails} className="space-y-4">
-            
-            {/* Address Input */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Recipient Address</label>
               <input 
@@ -90,7 +91,6 @@ export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps
               />
             </div>
 
-            {/* Amount Input */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Amount</label>
               <div className="relative">
@@ -108,17 +108,16 @@ export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps
               <p className="text-[10px] text-zinc-500 ml-1">Available: {balance.toFixed(4)} ETH</p>
             </div>
 
-            <button className="w-full bg-white text-black font-extrabold py-3.5 rounded-xl hover:bg-emerald-400 transition-all mt-4 flex items-center justify-center gap-2">
+            <button className="w-full bg-white text-black font-extrabold py-3.5 rounded-xl hover:bg-emerald-400 transition-all mt-4 flex items-center justify-center gap-2 active:scale-[0.98]">
               Next <ArrowRight size={16} />
             </button>
           </form>
-
         ) : (
-          <div className="text-center">
+          <div className="text-center animate-in zoom-in-95 duration-200">
             <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-500">
                <ShieldCheck size={24} />
             </div>
-            <p className="text-zinc-400 text-sm mb-6">Enter PIN to confirm sending <strong className="text-white">{amount} ETH</strong></p>
+            <p className="text-zinc-400 text-sm mb-6">Confirm sending <strong className="text-white">{amount} ETH</strong></p>
 
             <div className="flex justify-center gap-3 mb-8">
                <input 
@@ -135,21 +134,20 @@ export function SendModal({ wallet, prices, onClose, onSuccess }: SendModalProps
               <button 
                 onClick={() => setStep('details')}
                 disabled={loading}
-                className="w-full bg-zinc-800 text-white font-bold py-3 rounded-xl hover:bg-zinc-700 transition-all"
+                className="w-full bg-zinc-800 text-white font-bold py-3 rounded-xl hover:bg-zinc-700 transition-all disabled:opacity-50"
               >
                 Back
               </button>
               <button 
                 onClick={handleSend}
                 disabled={loading || pin.length < 4}
-                className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full bg-emerald-500 text-black font-bold py-3 rounded-xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
               >
                 {loading ? <Loader2 className="animate-spin" size={18} /> : 'Confirm Send'}
               </button>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
