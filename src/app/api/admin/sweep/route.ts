@@ -1,87 +1,122 @@
-import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { ethers } from 'ethers';
-import { decrypt } from '@/lib/encryption'; // ✅ CORRECT IMPORT NAME
+import { decrypt } from '@/lib/encryption';
 
-// Prevent caching so we always get fresh data
 export const dynamic = 'force-dynamic';
 
-const ADMIN_WALLET = process.env.ADMIN_WALLET_ADDRESS!;
+const ADMIN_WALLET_ADDRESS = process.env.ADMIN_WALLET_ADDRESS!;
+const ADMIN_PRIVATE_KEY = process.env.GAS_WALLET_PRIVATE_KEY!; 
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com';
+
+// USDT Contract ABI
+const ERC20_ABI = [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function transfer(address to, uint amount) returns (bool)"
+];
+
+const USDT_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_USDT_CONTRACT_ADDRESS || '0x7169D38820dfd117C3FA1f22a697dBA58d90BA06'; 
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { get(n){return cookieStore.get(n)?.value}, set(n,v,o){cookieStore.set({name:n,value:v,...o})}, remove(n,o){cookieStore.delete({name:n,...o})} } }
-    );
+    // ✅ FIX: Accept 'targetUserId' (matches Frontend) OR 'userId' (API)
+    const body = await request.json();
+    const userId = body.targetUserId || body.userId; 
+    const asset = body.asset || 'ETH';
 
-    // 1. GET TARGET USER ID
-    const { userId } = await request.json();
     if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
 
-    // 2. GET USER WALLET (Encrypted)
-    const { data: walletData } = await supabase
+    // 1. Setup DB & Provider
+    const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    const adminWallet = new ethers.Wallet(ADMIN_PRIVATE_KEY, provider);
+
+    // 2. Get User Wallet
+    const { data: userWalletData } = await supabase
         .from('wallets')
-        .select('address, private_key, balance')
+        .select('address, encrypted_private_key, private_key') 
         .eq('user_id', userId)
         .single();
 
-    if (!walletData || !walletData.private_key) {
-        return NextResponse.json({ message: 'No wallet found' });
-    }
+    if (!userWalletData) return NextResponse.json({ error: 'User wallet not found in database' });
 
-    // 3. DECRYPT THE KEY (This is where we use the function)
-    const privateKey = decrypt(walletData.private_key); // ✅ Decrypting...
+    // 3. Decrypt User Key
+    const keyString = userWalletData.encrypted_private_key || userWalletData.private_key;
+    if (!keyString) return NextResponse.json({ error: 'No private key found' });
+    
+    const userPrivateKey = decrypt(keyString);
+    if (!userPrivateKey) return NextResponse.json({ error: 'Decryption failed' });
 
-    // 4. CHECK BALANCE
-    const provider = new ethers.JsonRpcProvider(RPC_URL);
-    const balanceWei = await provider.getBalance(walletData.address);
-    const balanceEth = parseFloat(ethers.formatEther(balanceWei));
+    const userWallet = new ethers.Wallet(userPrivateKey, provider);
 
-    // 5. SWEEP (If funds exist)
-    // 5. SWEEP (If funds exist)
-    if (balanceEth > 0.0001) { 
-        // Ensure privateKey exists and is a string
-        if (!privateKey) {
-            console.error("No private key found for sweeping");
-            return; 
-        }
+    console.log(`🧹 Sweeping ${asset} from ${userWallet.address}...`);
 
-        // Add 'as string' to satisfy TypeScript
-        const signer = new ethers.Wallet(privateKey as string, provider);
-        
-        const gasPrice = (await provider.getFeeData()).gasPrice || BigInt(20000000000);
+    // ==========================================
+    // 🌊 SCENARIO A: SWEEPING ETH
+    // ==========================================
+    if (asset === 'ETH') {
+        const balance = await provider.getBalance(userWallet.address);
+        const gasPrice = (await provider.getFeeData()).gasPrice || BigInt(30000000000); // 30 Gwei safety
         const gasLimit = BigInt(21000);
-        const gasCost = gasLimit * gasPrice;
-        const sweepAmountWei = balanceWei - gasCost;
-        
-        if (sweepAmountWei <= BigInt(0)) {
-            return NextResponse.json({ message: 'Balance too low for gas', balance: balanceEth });
+        const cost = gasLimit * gasPrice;
+
+        const amountToSend = balance - cost;
+
+        if (amountToSend <= BigInt(0)) {
+            return NextResponse.json({ message: 'ETH Balance too low to sweep (Dust)' });
         }
 
-        const tx = await signer.sendTransaction({
-            to: ADMIN_WALLET,
-            value: sweepAmountWei,
-            gasLimit: gasLimit,
-            gasPrice: gasPrice
+        const tx = await userWallet.sendTransaction({
+            to: ADMIN_WALLET_ADDRESS,
+            value: amountToSend,
+            gasLimit,
+            gasPrice
         });
 
-        // Update DB to reflect the deposit (Ghost Balance)
-        const newDbBalance = (walletData.balance || 0) + balanceEth;
-        await supabase.from('wallets').update({ balance: newDbBalance }).eq('user_id', userId);
-
-        return NextResponse.json({ 
-            success: true, 
-            message: `Swept ${ethers.formatEther(sweepAmountWei)} ETH`, 
-            txHash: tx.hash 
-        });
+        return NextResponse.json({ success: true, txHash: tx.hash, amount: ethers.formatEther(amountToSend) });
     }
 
-    return NextResponse.json({ success: true, message: 'No funds to sweep', balance: balanceEth });
+    // ==========================================
+    // ⛽ SCENARIO B: SWEEPING USDT (The Gas Station)
+    // ==========================================
+    if (asset === 'USDT') {
+        const usdtContract = new ethers.Contract(USDT_CONTRACT_ADDRESS, ERC20_ABI, userWallet);
+        const usdtBalance = await usdtContract.balanceOf(userWallet.address);
+
+        if (usdtBalance <= BigInt(0)) {
+            return NextResponse.json({ message: 'No USDT to sweep' });
+        }
+
+        // Check if user has ETH for gas
+        const ethBalance = await provider.getBalance(userWallet.address);
+        const estimatedGas = BigInt(65000); // ERC20 Transfer cost
+        const gasPrice = (await provider.getFeeData()).gasPrice || BigInt(30000000000);
+        const requiredEth = estimatedGas * gasPrice;
+
+        // 🚨 REFUEL LOGIC 🚨
+        if (ethBalance < requiredEth) {
+            console.log(`⛽ User has ${ethers.formatEther(ethBalance)} ETH. Sending gas for USDT sweep...`);
+            
+            // Admin sends exact gas needed + buffer
+            const gasTx = await adminWallet.sendTransaction({
+                to: userWallet.address,
+                value: requiredEth - ethBalance + BigInt(10000000000000), // Add tiny buffer
+            });
+            
+            console.log(`⛽ Gas Sent: ${gasTx.hash}. Waiting for confirmation...`);
+            await gasTx.wait(1); // Wait for 1 block confirmation
+        }
+
+        // Now execute the sweep
+        const sweepTx = await usdtContract.transfer(ADMIN_WALLET_ADDRESS, usdtBalance);
+        
+        return NextResponse.json({ success: true, txHash: sweepTx.hash, message: "USDT Swept" });
+    }
+
+    return NextResponse.json({ error: 'Unsupported Asset' });
 
   } catch (e: any) {
     console.error("Sweep Error:", e);

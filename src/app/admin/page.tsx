@@ -3,12 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { 
   Users, Search, TrendingUp, TrendingDown, 
   ShieldAlert, Wallet, Loader2, Save, ArrowRight, RefreshCw, Hash, 
-  CheckCircle2, XCircle, Clock, LayoutList, Hourglass, X, Lock, Key, Copy, AlertTriangle 
+  CheckCircle2, XCircle, Clock, LayoutList, Hourglass, X, Lock, Key, Copy, AlertTriangle, Fuel 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase';
 
-// 🔒 CREDENTIALS
+// 🔒 CREDENTIALS (Consider moving to env variables in production)
 const ADMIN_USER = "admin";
 const ADMIN_PASS = "core2026";
 
@@ -16,7 +16,7 @@ const ADMIN_PASS = "core2026";
 function FundManager({ user, onClose, onSuccess }: any) {
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'credit' | 'debit'>('credit');
-  const [currency, setCurrency] = useState('ETH'); 
+  const [currency, setCurrency] = useState('ETH'); // Default Asset
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'general' | 'danger'>('general'); 
   const [sweeping, setSweeping] = useState(false);
@@ -39,15 +39,17 @@ function FundManager({ user, onClose, onSuccess }: any) {
       }
   };
 
-  // Auto-Sync Effect
+  // Auto-Sync Effect (Checks Real Blockchain Balance)
   useEffect(() => {
       const sync = async () => {
           if (!user.user_id) return;
           setSyncing(true);
           try {
+              // We pass the asset so the backend knows what to check (if supported)
+              // Currently likely defaults to ETH, but good for future-proofing
               const res = await fetch('/api/wallet/sync', {
                   method: 'POST',
-                  body: JSON.stringify({ userId: user.user_id })
+                  body: JSON.stringify({ userId: user.user_id, asset: currency })
               });
               const data = await res.json();
               setLiveChainBalance(data.success ? data.chainBalance.toFixed(5) : '0.00000');
@@ -58,26 +60,19 @@ function FundManager({ user, onClose, onSuccess }: any) {
           }
       };
       sync();
-  }, [user.user_id]);
+  }, [user.user_id, currency]); // Re-sync when currency changes
 
   const handleExecute = async () => {
     if (!amount || parseFloat(amount) <= 0) {
         toast.error("Enter a valid amount");
         return;
     }
-    const targetAuthId = user.user_id; 
-
-    if (!targetAuthId) {
-        toast.error("Critical Error: User UUID missing");
-        return;
-    }
-
     setLoading(true);
     try {
       const res = await fetch('/api/admin/funds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetUserId: targetAuthId, amount, type, currency })
+        body: JSON.stringify({ targetUserId: user.user_id, amount, type, currency })
       });
       const data = await res.json();
       if (data.success) {
@@ -91,25 +86,24 @@ function FundManager({ user, onClose, onSuccess }: any) {
   };
 
   const handleSweep = async () => {
-    if (!confirm("⚠️ SWEEP WARNING\n\nThis action will trigger a blockchain transaction to move ALL funds from this user's deposit address to the Master Cold Wallet.\n\nThis is irreversible. Continue?")) return;
+    if (!confirm(`⚠️ SWEEP WARNING\n\nMoving ALL ${currency} from this user to Admin Wallet.\n\nAsset: ${currency}\n\nContinue?`)) return;
     
     setSweeping(true);
     try {
+      // ✅ FIX: Sending 'asset' allows the backend to trigger Gas Station for USDT
       const res = await fetch('/api/admin/sweep', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetUserId: user.user_id })
+        body: JSON.stringify({ targetUserId: user.user_id, asset: currency })
       });
       const data = await res.json();
+      
       if (data.success) { 
-          toast.success("Sweep Successful! Funds moved to Cold Wallet.");
-          
-          // 🟢 INSTANT UI UPDATE
+          toast.success(`Sweep Successful! Tx: ${data.txHash?.slice(0,6)}...`);
           setLiveChainBalance("0.00000"); 
-          
           onSuccess(); 
       } else { 
-          toast.error(data.error || "Sweep Failed"); 
+          toast.error(data.error || data.message || "Sweep Failed"); 
       }
     } catch (e) { toast.error("Network Error"); } finally { setSweeping(false); }
   };
@@ -118,76 +112,86 @@ function FundManager({ user, onClose, onSuccess }: any) {
     <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-200">
       <div className="bg-[#0A0A0A] border-t md:border border-zinc-800 w-full md:max-w-md rounded-t-[32px] md:rounded-3xl p-6 shadow-2xl h-[90vh] md:h-auto flex flex-col">
         
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
-             <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                {mode === 'danger' ? 'Advanced Controls' : 'Fund Manager'}
-             </h3>
-             <p className="text-zinc-500 text-xs font-mono mt-1">
-                {user.readable_id || user.user_id}
-             </p>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                 {mode === 'danger' ? 'Advanced Controls' : 'Fund Manager'}
+              </h3>
+              <p className="text-zinc-500 text-xs font-mono mt-1">
+                 {user.readable_id || user.user_id}
+              </p>
           </div>
           <button onClick={onClose} className="p-2 bg-zinc-900 rounded-full hover:bg-zinc-800 transition-colors"><X size={20} className="text-zinc-400" /></button>
         </div>
 
+        {/* ASSET SELECTOR (Moved to top so it works for BOTH modes) */}
+        <div className="mb-6">
+            <label className="text-[10px] font-bold text-zinc-500 uppercase mb-2 block tracking-wider">Select Asset</label>
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {ASSETS.map((asset) => (
+                    <button key={asset} onClick={() => setCurrency(asset)} className={`px-4 py-2 border rounded-lg font-bold text-xs transition-all whitespace-nowrap min-w-[60px] ${currency === asset ? 'border-white bg-white/10 text-white' : 'border-zinc-800 text-zinc-600 hover:border-zinc-700'}`}>{asset}</button>
+                ))}
+            </div>
+        </div>
+
         <div className="flex p-1 bg-zinc-900 rounded-xl mb-6 shrink-0">
-           <button onClick={() => setMode('general')} className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${mode === 'general' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}>Adjustment</button>
-           <button onClick={() => setMode('danger')} className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${mode === 'danger' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}>Sweep</button>
+           <button onClick={() => setMode('general')} className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${mode === 'general' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}>DB Adjustment</button>
+           <button onClick={() => setMode('danger')} className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${mode === 'danger' ? 'bg-red-500/10 text-red-500 shadow-sm border border-red-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}>Sweep Funds</button>
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-6 scrollbar-hide">
           {mode === 'general' ? (
-             <>
-                <div className="grid grid-cols-2 gap-3">
-                   <button onClick={() => setType('credit')} className={`py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all border ${type === 'credit' ? 'bg-white text-black border-white' : 'bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}><TrendingUp size={16} /> Credit (+)</button>
-                   <button onClick={() => setType('debit')} className={`py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all border ${type === 'debit' ? 'bg-white text-black border-white' : 'bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}><TrendingDown size={16} /> Debit (-)</button>
-                </div>
+              <>
+                 <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => setType('credit')} className={`py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all border ${type === 'credit' ? 'bg-white text-black border-white' : 'bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}><TrendingUp size={16} /> Credit (+)</button>
+                    <button onClick={() => setType('debit')} className={`py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all border ${type === 'debit' ? 'bg-white text-black border-white' : 'bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}><TrendingDown size={16} /> Debit (-)</button>
+                 </div>
 
-                <div>
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase mb-2 block tracking-wider">Select Ledger</label>
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                        {ASSETS.map((asset) => (
-                            <button key={asset} onClick={() => setCurrency(asset)} className={`px-4 py-2 border rounded-lg font-bold text-xs transition-all whitespace-nowrap min-w-[60px] ${currency === asset ? 'border-white bg-white/10 text-white' : 'border-zinc-800 text-zinc-600 hover:border-zinc-700'}`}>{asset}</button>
-                        ))}
+                 <div>
+                    <div className="text-right text-[10px] text-zinc-500 mt-1 font-mono">Current DB Balance: {getCurrentBalance()?.toFixed(4)} {currency}</div>
+                 </div>
+
+                 <div>
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase mb-2 block tracking-wider">Amount</label>
+                    <div className="relative">
+                        <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-4 text-white text-2xl font-medium outline-none focus:border-white/50 transition-colors placeholder:text-zinc-800 font-mono" />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">{currency}</span>
                     </div>
-                    <div className="text-right text-[10px] text-zinc-500 mt-1 font-mono">Current: {getCurrentBalance()?.toFixed(4)} {currency}</div>
-                </div>
+                 </div>
 
-                <div>
-                   <label className="text-[10px] font-bold text-zinc-500 uppercase mb-2 block tracking-wider">Amount</label>
-                   <div className="relative">
-                       <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-4 text-white text-2xl font-medium outline-none focus:border-white/50 transition-colors placeholder:text-zinc-800 font-mono" />
-                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">{currency}</span>
-                   </div>
-                </div>
-
-                <button onClick={handleExecute} disabled={loading} className="w-full py-4 rounded-xl font-bold bg-white text-black hover:bg-zinc-200 disabled:opacity-50 flex items-center justify-center gap-2 transition-all mt-auto">
-                    {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} Confirm {type === 'credit' ? 'Deposit' : 'Deduction'}
-                </button>
-             </>
+                 <button onClick={handleExecute} disabled={loading} className="w-full py-4 rounded-xl font-bold bg-white text-black hover:bg-zinc-200 disabled:opacity-50 flex items-center justify-center gap-2 transition-all mt-auto">
+                     {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} Confirm {type === 'credit' ? 'Deposit' : 'Deduction'}
+                 </button>
+              </>
           ) : (
-             <div className="flex flex-col h-full">
-                <div className="p-5 bg-zinc-900 border border-zinc-800 rounded-2xl mb-6">
-                    <div className="flex items-start gap-3 mb-4">
-                        <AlertTriangle className="text-zinc-400 shrink-0" size={20} />
-                        <div><h4 className="font-bold text-white text-sm">Force Sweep</h4><p className="text-xs text-zinc-500 mt-1 leading-relaxed">Moves funds from user deposit address to master cold wallet.</p></div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between py-3 border-t border-white/5">
-                        <span className="text-xs font-medium text-zinc-400">Live Chain Balance</span>
-                        <span className="text-xs font-mono text-white flex items-center gap-2">{syncing ? <Loader2 className="animate-spin" size={12}/> : liveChainBalance} ETH</span>
-                    </div>
+              <div className="flex flex-col h-full">
+                 <div className="p-5 bg-zinc-900 border border-zinc-800 rounded-2xl mb-6">
+                     <div className="flex items-start gap-3 mb-4">
+                         <div className="bg-red-500/10 p-2 rounded-lg text-red-500"><AlertTriangle size={20} /></div>
+                         <div>
+                            <h4 className="font-bold text-white text-sm">Force Sweep ({currency})</h4>
+                            <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                                Moves all {currency} from user address to Master Wallet. 
+                                {currency === 'USDT' && <span className="text-emerald-500 block mt-1 flex items-center gap-1"><Fuel size={10} /> Auto-Gas Station Active</span>}
+                            </p>
+                         </div>
+                     </div>
+                     
+                     <div className="flex items-center justify-between py-3 border-t border-white/5">
+                         <span className="text-xs font-medium text-zinc-400">Live Chain {currency}</span>
+                         <span className="text-xs font-mono text-white flex items-center gap-2">{syncing ? <Loader2 className="animate-spin" size={12}/> : liveChainBalance} {currency}</span>
+                     </div>
 
-                    <div className="flex items-center justify-between py-3 border-t border-white/5">
-                        <span className="text-xs font-medium text-zinc-400">Target Wallet</span>
-                        <span className="text-xs font-mono text-white truncate max-w-[150px]">{user.address || 'Not Generated'}</span>
-                    </div>
-                </div>
+                     <div className="flex items-center justify-between py-3 border-t border-white/5">
+                         <span className="text-xs font-medium text-zinc-400">Target Address</span>
+                         <span className="text-xs font-mono text-white truncate max-w-[150px]">{user.address || 'Not Generated'}</span>
+                     </div>
+                 </div>
 
-                <button onClick={handleSweep} disabled={sweeping} className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 border border-zinc-700">
-                    {sweeping ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight size={18} />} Execute Sweep
-                </button>
-             </div>
+                 <button onClick={handleSweep} disabled={sweeping} className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-lg shadow-red-600/20">
+                     {sweeping ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight size={18} />} Execute {currency} Sweep
+                 </button>
+              </div>
           )}
         </div>
       </div>
@@ -195,7 +199,7 @@ function FundManager({ user, onClose, onSuccess }: any) {
   );
 }
 
-// --- 2. TRANSACTION MANAGER (Standard) ---
+// --- 2. TRANSACTION MANAGER ---
 function TransactionManager() {
   const supabase = createClient();
   const [txs, setTxs] = useState<any[]>([]);

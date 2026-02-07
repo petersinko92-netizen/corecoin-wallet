@@ -9,7 +9,7 @@ import { AssetIcon } from './AssetIcon';
 interface SwapModalProps {
   initialAsset: string;
   onClose: () => void;
-  onSuccess: () => Promise<void> | void; // ✅ Flexible for async/sync
+  onSuccess: () => Promise<void> | void;
 }
 
 const DB_MAP: Record<string, string> = {
@@ -29,13 +29,17 @@ export function SwapModal({ initialAsset, onClose, onSuccess }: SwapModalProps) 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [fromAsset, setFromAsset] = useState(initialAsset);
-  const [toAsset, setToAsset] = useState(initialAsset === 'USDT' ? 'ETH' : 'USDT');
+  
+  // ✅ 1. INITIALIZATION FIX: Never default 'toAsset' to ETH.
+  // If starting with USDT, suggest BTC. Otherwise, default to USDT.
+  const [toAsset, setToAsset] = useState(initialAsset === 'USDT' ? 'BTC' : 'USDT');
+  
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [balance, setBalance] = useState(0);
   const [prices, setPrices] = useState(FALLBACK_PRICES);
 
-  // 1. Fetch Prices
+  // 2. Fetch Prices
   useEffect(() => {
     const fetchPrices = async () => {
         try {
@@ -55,21 +59,26 @@ export function SwapModal({ initialAsset, onClose, onSuccess }: SwapModalProps) 
     fetchPrices();
   }, []);
 
-  // 2. Fetch User Balance
+  // 3. Fetch User Balance
   useEffect(() => {
     const fetchBalance = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const col = DB_MAP[fromAsset];
       const { data: w } = await supabase.from('wallets').select(col).eq('user_id', user.id).single();
-      
-      // ✅ THE FIX: Cast 'w' to any for dynamic indexing
       setBalance(w ? (w as any)[col] || 0 : 0);
     };
     fetchBalance();
   }, [fromAsset, supabase]);
 
-  // 3. Auto-Calculate Output
+  // ✅ 4. SAFETY CHECK: Ensure 'toAsset' is never ETH
+  useEffect(() => {
+      if (toAsset === 'ETH') {
+          setToAsset('BTC'); // Auto-correct to BTC if ETH is selected
+      }
+  }, [toAsset]);
+
+  // 5. Auto-Calculate Output
   useEffect(() => {
     const val = parseFloat(fromAmount);
     if (!val || isNaN(val)) { setToAmount(''); return; }
@@ -80,7 +89,14 @@ export function SwapModal({ initialAsset, onClose, onSuccess }: SwapModalProps) 
   }, [fromAmount, fromAsset, toAsset, prices]);
 
   const handleSwitch = () => {
-    setFromAsset(toAsset); setToAsset(fromAsset); setFromAmount('');
+    // ✅ SWITCH LOGIC: Prevent switching if it makes ETH the 'Buy' asset
+    if (fromAsset === 'ETH') {
+        toast.error("Swapping to ETH is currently unavailable");
+        return;
+    }
+    setFromAsset(toAsset); 
+    setToAsset(fromAsset); 
+    setFromAmount('');
   };
 
   const handleMax = () => {
@@ -92,6 +108,10 @@ export function SwapModal({ initialAsset, onClose, onSuccess }: SwapModalProps) 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user");
+      
+      // Double check before executing
+      if (toAsset === 'ETH') throw new Error("Swapping to ETH is not allowed");
+
       const amountIn = parseFloat(fromAmount);
       const amountOut = parseFloat(toAmount);
 
@@ -100,12 +120,11 @@ export function SwapModal({ initialAsset, onClose, onSuccess }: SwapModalProps) 
       const fromCol = DB_MAP[fromAsset];
       const toCol = DB_MAP[toAsset];
 
-      // ✅ THE FIX: Cast 'wallet' to any for dynamic safety checks
       if (!wallet || (wallet as any)[fromCol] < amountIn) {
           throw new Error("Insufficient balance");
       }
 
-      // 1. Update Wallet Balances
+      // Update Balances
       const { error } = await supabase.from('wallets').update({
         [fromCol]: (wallet as any)[fromCol] - amountIn,
         [toCol]: (wallet as any)[toCol] + amountOut
@@ -113,9 +132,8 @@ export function SwapModal({ initialAsset, onClose, onSuccess }: SwapModalProps) 
 
       if (error) throw error;
 
-      // 2. Log Transactions
+      // Log Transaction
       const rate = (prices[fromAsset] / prices[toAsset]).toFixed(4);
-      
       const txs = [
         { 
             user_id: user.id, type: 'swap', amount: -amountIn, currency: fromAsset, 
@@ -165,52 +183,60 @@ export function SwapModal({ initialAsset, onClose, onSuccess }: SwapModalProps) 
         {step === 1 && (
            <div className="px-4 pb-2 flex flex-col gap-1 relative">
               <div className={`p-5 rounded-[24px] ${bgInput} relative z-10`}>
-                 <div className="flex justify-between mb-1">
-                    <span className={`text-sm font-medium ${textSub}`}>Sell</span>
-                 </div>
-                 <div className="flex items-center justify-between gap-4">
-                    <input 
-                       type="number" 
-                       value={fromAmount}
-                       onChange={(e) => setFromAmount(e.target.value)}
-                       placeholder="0"
-                       className={`w-full bg-transparent text-[40px] font-medium outline-none ${textMain} h-12 tracking-tight`}
-                    />
-                    <div className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full shadow-sm border ${isDark ? 'bg-[#2C2C2E] border-black' : 'bg-white border-black/5'} shrink-0`}>
-                       <div className="w-6 h-6"><AssetIcon symbol={fromAsset} size="sm" /></div>
-                       <span className={`font-bold text-[17px] ${textMain}`}>{fromAsset}</span>
-                       <ChevronDown size={16} className={textSub} />
-                    </div>
-                 </div>
-                 <div className="flex justify-between items-center mt-2">
-                    <span className={`text-xs ${textSub}`}>
-                       ${(parseFloat(fromAmount || '0') * prices[fromAsset]).toLocaleString()}
-                    </span>
-                    <div className="flex items-center gap-2 cursor-pointer" onClick={handleMax}>
-                       <Wallet size={12} className={textSub} />
-                       <span className={`text-xs font-medium ${textSub}`}>{balance.toFixed(4)}</span>
-                       <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md">MAX</span>
-                    </div>
-                 </div>
+                  <div className="flex justify-between mb-1">
+                     <span className={`text-sm font-medium ${textSub}`}>Sell</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                     <input 
+                        type="number" 
+                        value={fromAmount}
+                        onChange={(e) => setFromAmount(e.target.value)}
+                        placeholder="0"
+                        className={`w-full bg-transparent text-[40px] font-medium outline-none ${textMain} h-12 tracking-tight`}
+                     />
+                     <div className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full shadow-sm border ${isDark ? 'bg-[#2C2C2E] border-black' : 'bg-white border-black/5'} shrink-0`}>
+                        <div className="w-6 h-6"><AssetIcon symbol={fromAsset} size="sm" /></div>
+                        <span className={`font-bold text-[17px] ${textMain}`}>{fromAsset}</span>
+                        {/* We keep the icon for visual consistency, but no dropdown logic is active here */}
+                        <ChevronDown size={16} className={textSub} />
+                     </div>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                     <span className={`text-xs ${textSub}`}>
+                        ${(parseFloat(fromAmount || '0') * prices[fromAsset]).toLocaleString()}
+                     </span>
+                     <div className="flex items-center gap-2 cursor-pointer" onClick={handleMax}>
+                        <Wallet size={12} className={textSub} />
+                        <span className={`text-xs font-medium ${textSub}`}>{balance.toFixed(4)}</span>
+                        <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md">MAX</span>
+                     </div>
+                  </div>
               </div>
 
               <div className="h-0 relative z-20 flex justify-center items-center">
-                 <button onClick={handleSwitch} className={`absolute p-2 rounded-[14px] border-[4px] shadow-sm ${isDark ? 'bg-[#121212] border-[#121212] text-white' : 'bg-white border-white text-slate-700'}`}>
-                    <ArrowDown size={20} strokeWidth={2.5} />
-                 </button>
+                 {/* ✅ HIDE BUTTON IF SELLING ETH: Prevents swapping TO ETH */}
+                 {fromAsset !== 'ETH' ? (
+                    <button onClick={handleSwitch} className={`absolute p-2 rounded-[14px] border-[4px] shadow-sm ${isDark ? 'bg-[#121212] border-[#121212] text-white' : 'bg-white border-white text-slate-700'}`}>
+                        <ArrowDown size={20} strokeWidth={2.5} />
+                    </button>
+                 ) : (
+                    <div className={`absolute p-2 rounded-[14px] border-[4px] shadow-sm opacity-50 cursor-not-allowed ${isDark ? 'bg-[#121212] border-[#121212] text-zinc-600' : 'bg-white border-white text-zinc-300'}`}>
+                        <ArrowDown size={20} strokeWidth={2.5} />
+                    </div>
+                 )}
               </div>
 
               <div className={`p-5 pt-6 rounded-[24px] ${bgInput} relative z-0`}>
-                 <div className="flex justify-between mb-1">
-                    <span className={`text-sm font-medium ${textSub}`}>Buy</span>
-                 </div>
-                 <div className="flex items-center justify-between gap-4">
-                    <input disabled value={toAmount} placeholder="0" className={`w-full bg-transparent text-[40px] font-medium outline-none opacity-40 ${textMain} h-12 tracking-tight`} />
-                    <div className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full shadow-sm border ${isDark ? 'bg-[#2C2C2E] border-black' : 'bg-white border-black/5'} shrink-0`}>
-                       <div className="w-6 h-6"><AssetIcon symbol={toAsset} size="sm" /></div>
-                       <span className={`font-bold text-[17px] ${textMain}`}>{toAsset}</span>
-                    </div>
-                 </div>
+                  <div className="flex justify-between mb-1">
+                     <span className={`text-sm font-medium ${textSub}`}>Buy</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                     <input disabled value={toAmount} placeholder="0" className={`w-full bg-transparent text-[40px] font-medium outline-none opacity-40 ${textMain} h-12 tracking-tight`} />
+                     <div className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full shadow-sm border ${isDark ? 'bg-[#2C2C2E] border-black' : 'bg-white border-black/5'} shrink-0`}>
+                        <div className="w-6 h-6"><AssetIcon symbol={toAsset} size="sm" /></div>
+                        <span className={`font-bold text-[17px] ${textMain}`}>{toAsset}</span>
+                     </div>
+                  </div>
               </div>
 
               <button 

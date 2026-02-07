@@ -2,9 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
-import {
-  ArrowUpRight, ArrowDownLeft, Copy, Eye, EyeOff, User,
-  TrendingUp, RefreshCw, Layers, Search, Loader2
+import { 
+  ArrowUpRight, ArrowDownLeft, Copy, Eye, EyeOff, User, 
+  TrendingUp, RefreshCw, Layers, Search, Loader2 
 } from 'lucide-react';
 import { useSecurity } from '@/context/SecurityContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -14,6 +14,11 @@ import { SendModal } from '@/components/dashboard/SendModal';
 import { SwapModal } from '@/components/dashboard/SwapModal';
 import { AssetIcon } from '@/components/dashboard/AssetIcon';
 import { toast } from 'sonner';
+
+// ✅ FIX 1: Fallback prices prevent "$0.00" balance errors if API fails
+const FALLBACK_PRICES: Record<string, number> = { 
+  ETH: 2950.00, BTC: 65000.00, SOL: 145.00, TRX: 0.15, USDT: 1.00 
+};
 
 export default function DashboardPage() {
   const supabase = createClient();
@@ -34,9 +39,7 @@ export default function DashboardPage() {
   const [dailyExpense, setDailyExpense] = useState(0);
   
   // PRICES
-  const [prices, setPrices] = useState<Record<string, number>>({ 
-      ETH: 0, BTC: 0, SOL: 0, TRX: 0, USDT: 1.00 
-  });
+  const [prices, setPrices] = useState<Record<string, number>>(FALLBACK_PRICES);
   
   const [hideBalance, setHideBalance] = useState(false);
 
@@ -74,18 +77,22 @@ export default function DashboardPage() {
   const fetchPrices = async () => {
     try {
       const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,bitcoin,solana,tron&vs_currencies=usd');
+      if (!res.ok) throw new Error("API Limit");
       const data = await res.json();
       setPrices({ 
-          ETH: data.ethereum?.usd || 0,
-          BTC: data.bitcoin?.usd || 0,
-          SOL: data.solana?.usd || 0,
-          TRX: data.tron?.usd || 0,
+          ETH: data.ethereum?.usd || FALLBACK_PRICES.ETH,
+          BTC: data.bitcoin?.usd || FALLBACK_PRICES.BTC,
+          SOL: data.solana?.usd || FALLBACK_PRICES.SOL,
+          TRX: data.tron?.usd || FALLBACK_PRICES.TRX,
           USDT: 1.00
       });
-    } catch (e) { console.log("Price fetch failed"); }
+    } catch (e) { 
+        // Keep fallback prices if API fails
+        console.log("Using fallback prices"); 
+    }
   };
 
-  // 3. LIVE SYNC (The Heartbeat)
+  // 3. LIVE SYNC (Heartbeat)
   useEffect(() => {
     if (!wallet?.user_id) return;
 
@@ -96,9 +103,10 @@ export default function DashboardPage() {
                 body: JSON.stringify({ userId: wallet.user_id })
             });
             const data = await res.json();
-            if (data.success && data.message.includes("Deposit")) {
+            // Only reload if a NEW deposit was actually detected/processed
+            if (data.success && data.message && data.message.includes("Deposit")) {
                 toast.success("New Deposit Received!");
-                fetchData(); // Reload DB data
+                fetchData(); 
             }
         } catch (e) { /* Silent */ }
     };
@@ -131,11 +139,11 @@ export default function DashboardPage() {
   }, [transactions, prices]);
 
   const totalBalance = wallet ? 
-      (wallet.balance * (prices.ETH || 0)) + 
-      (wallet.btc_balance * (prices.BTC || 0)) +
-      (wallet.sol_balance * (prices.SOL || 0)) +
-      (wallet.trx_balance * (prices.TRX || 0)) +
-      (wallet.usdt_balance || 0) 
+      ((wallet.balance || 0) * (prices.ETH || 0)) + 
+      ((wallet.btc_balance || 0) * (prices.BTC || 0)) +
+      ((wallet.sol_balance || 0) * (prices.SOL || 0)) +
+      ((wallet.trx_balance || 0) * (prices.TRX || 0)) +
+      ((wallet.usdt_balance || 0)) 
       : 0;
 
   const handleComingSoon = () => toast.info("Feature coming soon");
@@ -239,8 +247,8 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={goToWallet} className="bg-white text-slate-900 hover:bg-zinc-200 font-bold py-3.5 rounded-xl transition-all shadow-lg active:scale-95">Receive</button>
-              <button onClick={goToWallet} className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95">Send</button>
+              <button onClick={() => setShowQR(true)} className="bg-white text-slate-900 hover:bg-zinc-200 font-bold py-3.5 rounded-xl transition-all shadow-lg active:scale-95">Receive</button>
+              <button onClick={() => setShowSend(true)} className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95">Send</button>
             </div>
           </div>
         </div>

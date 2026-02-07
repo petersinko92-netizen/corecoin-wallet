@@ -51,3 +51,31 @@ body {
     display: none;
   }
 }
+
+/* --- PWA SAFE AREA UTILITIES --- */
+/* This ensures content doesn't get hidden behind the Notch or Home Bar */
+
+@supports (padding: max(0px)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Fix iOS Input Zooming */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important; 
+  }
+}

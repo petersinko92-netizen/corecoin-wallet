@@ -17,7 +17,7 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({ 
-      full_name: '', // Added Full Name
+      full_name: '', 
       email: '', 
       password: '' 
   });
@@ -28,12 +28,12 @@ export default function SignupPage() {
     number: /\d/.test(formData.password),
     special: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password),
     email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email),
-    name: formData.full_name.length > 2 // Basic name check
+    name: formData.full_name.length > 2
   };
   
   const isFormValid = validations.length && validations.number && validations.special && validations.email && validations.name;
 
-  // 1. SIGNUP HANDLER (Connects to our Custom API)
+  // 1. SIGNUP HANDLER
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid) return;
@@ -41,7 +41,6 @@ export default function SignupPage() {
     setError('');
 
     try {
-        // CALL OUR CUSTOM API
         const res = await fetch('/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -58,11 +57,10 @@ export default function SignupPage() {
             throw new Error(data.error || 'Signup failed');
         }
 
-        // Success!
-        toast.success("Account created successfully!");
+        toast.success("Confirmation code sent!");
         
-        // Auto-login logic (Optional) or Redirect to Login
-        router.push('/auth/login?success=true');
+        // ✅ FIX: Redirect to Verify Email page with the email in the URL
+        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
 
     } catch (err: any) {
         setError(err.message);
@@ -71,7 +69,6 @@ export default function SignupPage() {
         setLoading(false);
     }
   };
-
   // 2. GOOGLE LOGIN HANDLER
   const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -84,7 +81,6 @@ export default function SignupPage() {
     if (error) toast.error(error.message);
   };
 
-  // THEME VARIABLES
   const isDark = theme === 'dark';
   const bgCard = isDark ? 'bg-[#0a0a0a]/80 border-white/10' : 'bg-white/80 border-slate-200';
   const textMain = isDark ? 'text-white' : 'text-slate-900';
@@ -109,7 +105,7 @@ export default function SignupPage() {
            </div>
         )}
 
-        {/* FULL NAME INPUT */}
+        {/* FULL NAME */}
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Full Name</label>
           <div className="relative group">
@@ -124,7 +120,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* EMAIL INPUT */}
+        {/* EMAIL */}
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Email Address</label>
           <div className="relative group">
@@ -139,7 +135,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* PASSWORD INPUT */}
+        {/* PASSWORD */}
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Password</label>
           <div className="relative">
@@ -183,9 +179,10 @@ export default function SignupPage() {
           type="button"
           onClick={handleGoogleLogin} 
           className={`w-full border font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-3
-             ${isDark ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white' : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'}
+              ${isDark ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white' : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'}
           `}
         >
+          {/* Google SVG Icon */}
           <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -203,10 +200,10 @@ export default function SignupPage() {
 function PasswordChip({ label, valid, isDark }: { label: string, valid: boolean, isDark: boolean }) {
   return (
     <div className={`px-3 py-1.5 rounded-full text-[10px] font-bold border flex items-center gap-1.5 
-       ${valid 
+        ${valid 
           ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-600' 
           : (isDark ? 'bg-zinc-900 border-white/5 text-zinc-500' : 'bg-slate-100 border-slate-200 text-slate-400')
-       }
+        }
     `}>
       {valid ? <Check size={10} strokeWidth={4} /> : <div className={`w-2.5 h-2.5 rounded-full ${isDark ? 'bg-zinc-700' : 'bg-slate-300'}`}></div>}{label}
     </div>
