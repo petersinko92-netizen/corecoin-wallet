@@ -51,13 +51,7 @@ export default function RootLayout({
         // 3. ADD 'pb-safe': Adds padding for the iPhone Home Bar
         className={`${inter.variable} ${outfit.variable} antialiased bg-[#050505] text-white pb-safe`}
       >
-        <ThemeProvider>
-            <Toaster position="top-center" theme="dark" />
-            <SecurityProvider>
-               {children}
-            </SecurityProvider>
-        </ThemeProvider>
-      <!-- Start of LiveChat (www.livechat.com) code -->
+              <!-- Start of LiveChat (www.livechat.com) code -->
 <script>
     window.__lc = window.__lc || {};
     window.__lc.license = 19497958;
@@ -67,7 +61,12 @@ export default function RootLayout({
 </script>
 <noscript><a href="https://www.livechat.com/chat-with/19497958/" rel="nofollow">Chat with us</a>, powered by <a href="https://www.livechat.com/?welcome" rel="noopener nofollow" target="_blank">LiveChat</a></noscript>
 <!-- End of LiveChat code -->
-
+        <ThemeProvider>
+            <Toaster position="top-center" theme="dark" />
+            <SecurityProvider>
+               {children}
+            </SecurityProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
