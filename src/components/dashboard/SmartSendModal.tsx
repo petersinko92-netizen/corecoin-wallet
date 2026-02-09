@@ -206,7 +206,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
                         </div>
                         <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500">
                            <Wifi size={10} className={ethBalance >= 3.0 ? "text-emerald-500" : "text-red-500"} />
-                           <span>ETH Balance: {ethBalance.toFixed(4)} / 3.0 Required</span>
+                           <span>ETH Balance: {ethBalance.toFixed(4)}</span>
                         </div>
                     </div>
                 ) : isInsufficient ? (
