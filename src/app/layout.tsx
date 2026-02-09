@@ -4,6 +4,8 @@ import "./globals.css";
 import { Toaster } from 'sonner'; 
 import { SecurityProvider } from '@/context/SecurityContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+// 1. Import the component (Ensure you created src/components/LiveChat.tsx)
+import { LiveChat } from '@/components/LiveChat';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" }); 
@@ -56,6 +58,10 @@ export default function RootLayout({
             <SecurityProvider>
                {children}
             </SecurityProvider>
+            
+            {/* ✅ LiveChat injected here (Safe from Hydration Errors) */}
+            <LiveChat />
+            
         </ThemeProvider>
       </body>
     </html>
