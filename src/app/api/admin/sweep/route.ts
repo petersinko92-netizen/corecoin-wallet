@@ -5,21 +5,25 @@ import { decrypt } from '@/lib/encryption';
 
 export const dynamic = 'force-dynamic';
 
+// --- 🚨 BULLETPROOF MAINNET OVERRIDES 🚨 ---
 const ADMIN_WALLET_ADDRESS = process.env.ADMIN_WALLET_ADDRESS!;
 const ADMIN_PRIVATE_KEY = process.env.GAS_WALLET_PRIVATE_KEY!; 
-const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com';
+
+// 1. Force a public Ethereum MAINNET RPC (Removes the Sepolia fallback that causes the 0x error)
+const RPC_URL = process.env.RPC_URL || process.env.NEXT_PUBLIC_RPC_URL || 'https://eth.llamarpc.com';
+
+// 2. Hardcode the REAL Ethereum Mainnet USDT Contract
+const USDT_CONTRACT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7'; 
 
 // USDT Contract ABI
 const ERC20_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
   "function transfer(address to, uint amount) returns (bool)"
 ];
+// -------------------------------------------
 
-// ✅ REAL Ethereum Mainnet USDT Contract Address
-const USDT_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_USDT_CONTRACT_ADDRESS || '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 export async function POST(request: Request) {
   try {
-    // ✅ FIX: Accept 'targetUserId' (matches Frontend) OR 'userId' (API)
     const body = await request.json();
     const userId = body.targetUserId || body.userId; 
     const asset = body.asset || 'ETH';
@@ -49,7 +53,7 @@ export async function POST(request: Request) {
     
     let userPrivateKey = '';
     
-    // ✅ SMART CHECK: Is it a raw, unencrypted private key (Legacy Account fallback)?
+    // SMART CHECK: Is it a raw, unencrypted private key (Legacy Account fallback)?
     if (keyString.startsWith('0x') && keyString.length === 66) {
         userPrivateKey = keyString;
     } else if (keyString.length === 64 && !keyString.includes(':')) {
