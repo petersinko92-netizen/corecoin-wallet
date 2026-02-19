@@ -43,14 +43,33 @@ export async function POST(request: Request) {
 
     if (!userWalletData) return NextResponse.json({ error: 'User wallet not found in database' });
 
-    // 3. Decrypt User Key
+    // 3. Smart Decrypt User Key
     const keyString = userWalletData.encrypted_private_key || userWalletData.private_key;
-    if (!keyString) return NextResponse.json({ error: 'No private key found' });
+    if (!keyString) return NextResponse.json({ error: 'No private key found' }, { status: 400 });
     
-    const userPrivateKey = decrypt(keyString);
-    if (!userPrivateKey) return NextResponse.json({ error: 'Decryption failed' });
+    let userPrivateKey = '';
+    
+    // ✅ SMART CHECK: Is it a raw, unencrypted private key (Legacy Account fallback)?
+    if (keyString.startsWith('0x') && keyString.length === 66) {
+        userPrivateKey = keyString;
+    } else if (keyString.length === 64 && !keyString.includes(':')) {
+        userPrivateKey = '0x' + keyString;
+    } else {
+        // It is a new account, so decrypt it normally
+        const decrypted = decrypt(keyString);
+        if (!decrypted) {
+            return NextResponse.json({ error: 'Decryption failed. Key mismatch or corrupted old account.' }, { status: 400 });
+        }
+        userPrivateKey = decrypted.startsWith('0x') ? decrypted : '0x' + decrypted;
+    }
 
-    const userWallet = new ethers.Wallet(userPrivateKey, provider);
+    // Wrap wallet creation in a try-catch to catch mathematically invalid keys
+    let userWallet;
+    try {
+        userWallet = new ethers.Wallet(userPrivateKey, provider);
+    } catch (err) {
+        return NextResponse.json({ error: 'Recovered private key is invalid.' }, { status: 400 });
+    }
 
     console.log(`🧹 Sweeping ${asset} from ${userWallet.address}...`);
 
