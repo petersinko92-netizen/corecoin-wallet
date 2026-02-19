@@ -15,8 +15,8 @@ const ERC20_ABI = [
   "function transfer(address to, uint amount) returns (bool)"
 ];
 
-const USDT_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_USDT_CONTRACT_ADDRESS || '0x7169D38820dfd117C3FA1f22a697dBA58d90BA06'; 
-
+// ✅ REAL Ethereum Mainnet USDT Contract Address
+const USDT_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_USDT_CONTRACT_ADDRESS || '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 export async function POST(request: Request) {
   try {
     // ✅ FIX: Accept 'targetUserId' (matches Frontend) OR 'userId' (API)
