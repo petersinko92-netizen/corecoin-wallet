@@ -45,8 +45,14 @@ export function ConnectWalletModal({ onClose, onSuccess }: ConnectWalletModalPro
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-[#050505]/95 backdrop-blur-xl flex items-center justify-center p-4">
-      <div className="bg-[#0a0a0a] border border-white/10 w-full max-w-md rounded-3xl p-6 relative shadow-2xl animate-in zoom-in-95 duration-200">
+    <div 
+      className="fixed inset-0 z-[9999] bg-[#050505]/95 backdrop-blur-xl flex items-center justify-center p-4"
+      onClick={onClose} // ✅ Added backdrop click to close
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()} // ✅ Prevents clicks inside the modal from closing it
+        className="bg-[#0a0a0a] border border-white/10 w-full max-w-md rounded-3xl p-6 relative shadow-2xl animate-in zoom-in-95 duration-200"
+      >
         
         <button onClick={onClose} className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors">
           <X size={20} />
