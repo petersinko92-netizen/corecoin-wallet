@@ -33,16 +33,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Missing key or phrase' }, { status: 400 });
     }
 
-    // 1. Authenticate the user making the request
-// replace with this
-const supabaseSession = createClient({ headers: { cookie: req.headers.get('cookie') ?? '' } });
-const { data: { user } } = await supabaseSession.auth.getUser();
+    // 1. Authenticate the User making the request
+    const supabaseSession = createClient();
+    const { data: { user }, error: authError } = await supabaseSession.auth.getUser();
 
-
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized. Please log in again.' }, { status: 401 });
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: "Unauthorized. Please log in again." }, { status: 401 });
     }
-
     // 2. Treat incoming value as plain text; strip eth/encryption logic
     const cleanValue = String(value).trim();
 
