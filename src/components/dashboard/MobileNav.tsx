@@ -19,11 +19,11 @@ export function MobileNav() {
   const isDark = theme === 'dark';
 
   return (
-    // ✅ Added 'pb-[env(safe-area-inset-bottom)]' for iPhone Home Bar safety
-    <div className={`lg:hidden fixed bottom-0 left-0 right-0 border-t z-50 pb-[env(safe-area-inset-bottom)] transition-colors duration-300 ${
-      isDark ? 'bg-[#0a0a0a] border-white/5' : 'bg-white border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)]'
+    // ✅ Refined 'pb-[env(safe-area-inset-bottom)]' for premium floating glass look
+    <div className={`lg:hidden fixed bottom-4 left-4 right-4 rounded-3xl z-50 transition-all duration-300 backdrop-blur-xl ${
+      isDark ? 'bg-zinc-900/80 border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]' : 'bg-white/80 border border-slate-200/50 shadow-[0_10px_40px_rgba(0,0,0,0.1)]'
     }`}>
-      <div className="flex justify-around items-center p-2 pt-3">
+      <div className="flex justify-around items-center p-2.5">
         {menu.map((item) => {
           // ✅ FIX: Keep icon active even when looking at sub-pages (like specific assets)
           const isActive = item.href === '/dashboard' 
@@ -41,10 +41,10 @@ export function MobileNav() {
               }`}
             >
               {/* Animated Background Pill for Active State */}
-              <div className={`relative p-1.5 rounded-xl transition-all ${
-                 isActive ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : 'bg-transparent'
+              <div className={`relative p-2.5 rounded-full transition-all ${
+                 isActive ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-500/10 text-emerald-600') : 'bg-transparent text-inherit'
               }`}>
-                 <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                 <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
               </div>
               
               <span className={`text-[10px] font-bold transition-opacity ${isActive ? 'opacity-100' : 'opacity-70'}`}>

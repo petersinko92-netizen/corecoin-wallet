@@ -86,7 +86,7 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className="pb-32 animate-in fade-in duration-500 p-4 md:p-8">
+    <div className="pb-32 animate-in fade-in duration-500 p-4 md:p-8 pt-[max(env(safe-area-inset-top),1.5rem)] md:pt-[max(env(safe-area-inset-top),2rem)]">
       
       <h1 className={`text-2xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>Settings</h1>
       

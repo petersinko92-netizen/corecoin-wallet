@@ -71,7 +71,7 @@ export default function ProfilePage() {
   );
 
   return (
-    <div className="pb-24 animate-in fade-in duration-500 p-6 pt-8">
+    <div className="pb-24 animate-in fade-in duration-500 p-6 pt-[max(env(safe-area-inset-top),2rem)] md:pt-[max(env(safe-area-inset-top),3rem)]">
       
       {showEdit && (
         <EditProfileModal 

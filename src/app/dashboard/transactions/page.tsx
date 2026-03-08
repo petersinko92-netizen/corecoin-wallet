@@ -81,7 +81,7 @@ export default function TransactionsPage() {
   const isDark = theme === 'dark';
 
   return (
-    <div className="p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32">
+    <div className="p-4 md:p-8 pt-[max(env(safe-area-inset-top),1.5rem)] md:pt-[max(env(safe-area-inset-top),2rem)] animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32">
       
       {selectedTx && (
         <TransactionReceipt tx={selectedTx} onClose={() => setSelectedTx(null)} />

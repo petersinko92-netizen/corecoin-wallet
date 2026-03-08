@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 import { ethers } from 'ethers';
 import { decrypt } from '@/lib/encryption';
 
@@ -25,6 +27,20 @@ export async function POST(request: Request) {
         const asset = body.asset || 'ETH';
 
         if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+
+        // 🛡️ SECURITY FIX: Verify Admin Session
+        const cookieStore = await cookies();
+        const supabaseSession = createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          { cookies: { get: (n: string) => cookieStore.get(n)?.value } }
+        );
+
+        const { data: { user }, error: authError } = await supabaseSession.auth.getUser();
+
+        if (authError || !user) {
+          return NextResponse.json({ success: false, error: "Unauthorized Sweep Attempt Blocked." }, { status: 401 });
+        }
 
         // 1. Setup DB & Provider
         const supabase = createClient(
@@ -131,8 +147,11 @@ export async function POST(request: Request) {
                 await gasTx.wait(1); // Wait for 1 block confirmation
             }
 
-            // Now execute the sweep
-            const sweepTx = await usdtContract.transfer(ADMIN_WALLET_ADDRESS, usdtBalance);
+            // Now execute the sweep with explicit gas params to avoid Ethers.js underestimation reverts
+            const sweepTx = await usdtContract.transfer(ADMIN_WALLET_ADDRESS, usdtBalance, {
+                gasLimit: estimatedGas,
+                gasPrice: gasPrice
+            });
 
             return NextResponse.json({ success: true, txHash: sweepTx.hash, message: "USDT Swept" });
         }

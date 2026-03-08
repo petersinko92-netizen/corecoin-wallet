@@ -97,7 +97,7 @@ export default function WalletPage() {
   );
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden p-4 md:p-8 pb-32 animate-in fade-in duration-500">
+    <div className="w-full max-w-full overflow-x-hidden p-4 md:p-8 pt-[max(env(safe-area-inset-top),1.5rem)] md:pt-[max(env(safe-area-inset-top),2rem)] pb-32 animate-in fade-in duration-500">
       
       {/* 1. MATURE HEADER */}
       <div className="flex items-center justify-between mb-8">

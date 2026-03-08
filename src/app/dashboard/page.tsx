@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import {
   ArrowUpRight, ArrowDownLeft, Copy, Eye, EyeOff, User,
-  TrendingUp, RefreshCw, Layers, Search, Loader2, ShieldCheck
+  TrendingUp, RefreshCw, Layers, Search, Loader2, ShieldCheck, WalletCards
 } from 'lucide-react';
 import { useSecurity } from '@/context/SecurityContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -180,7 +180,7 @@ export default function DashboardPage() {
   const isDark = theme === 'dark';
 
   return (
-    <div className={`p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+    <div className={`p-4 md:p-8 pt-[max(env(safe-area-inset-top),1.5rem)] md:pt-[max(env(safe-area-inset-top),2rem)] animate-in fade-in slide-in-from-bottom-4 duration-500 pb-28 ${isDark ? 'text-white' : 'text-slate-900'}`}>
 
       {/* MODALS */}
       {showQR && wallet && <ReceiveModal asset={activeAsset} userAddress={wallet.address} onClose={() => setShowQR(false)} />}
@@ -214,7 +214,7 @@ export default function DashboardPage() {
               }`}
           >
             <div className={`p-1 rounded-full transition-colors ${isDark ? 'bg-white/5 group-hover:bg-emerald-500/20' : 'bg-slate-100 group-hover:bg-emerald-50'}`}>
-              <ShieldCheck size={14} className={`transition-colors ${isDark ? 'text-zinc-400 group-hover:text-emerald-400' : 'text-slate-400 group-hover:text-emerald-600'}`} />
+              <WalletCards size={14} className={`transition-colors ${isDark ? 'text-zinc-400 group-hover:text-emerald-400' : 'text-slate-400 group-hover:text-emerald-600'}`} />
             </div>
             Connect Wallet
           </button>
@@ -227,21 +227,16 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* MOBILE HEADER */}
       <div className="lg:hidden flex items-center justify-between mb-8">
-        <span className="font-bold text-xl tracking-tight">CORECOIN</span>
-        <div className="flex items-center gap-3">
-          {/* ✨ PREMIUM MOBILE CONNECT BUTTON */}
-          <button
-            onClick={() => setShowConnect(true)}
-            className={`group flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs transition-all border ${isDark
-                ? 'bg-[#0a0a0a] border-white/10 text-zinc-300 hover:text-white hover:border-emerald-500/50'
-                : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900'
-              }`}
-          >
-            <ShieldCheck size={14} className={isDark ? "text-emerald-400" : "text-emerald-600"} />
-            Connect
+        <div className="flex flex-col">
+          <span className="font-bold text-xl tracking-tight">CORE</span>
+          <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>Portfolio</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => router.push('/dashboard/profile')} className={`p-2 rounded-full border transition-colors ${isDark ? 'border-white/10 text-zinc-400 hover:text-white bg-[#0a0a0a]' : 'border-slate-200 text-slate-500 hover:text-slate-900 bg-white'}`}>
+            <User size={20} />
           </button>
-          <button onClick={() => router.push('/dashboard/profile')}><User size={24} /></button>
         </div>
       </div>
 
@@ -263,7 +258,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tight">
+            <h1 className="text-[clamp(2.5rem,8vw,4rem)] font-black mb-6 tracking-tighter truncate max-w-full" title={`$${totalBalance.toLocaleString()}`}>
               {hideBalance ? '••••••' : `$${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </h1>
 
@@ -290,18 +285,18 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {/* ✅ FIX: Receive and Send buttons now trigger goToWallet */}
-              <button onClick={goToWallet} className="bg-white text-slate-900 hover:bg-zinc-200 font-bold py-3.5 rounded-xl transition-all shadow-lg active:scale-95">Receive</button>
-              <button onClick={goToWallet} className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95">Send</button>
+              <button onClick={goToWallet} className="bg-white text-slate-900 hover:bg-zinc-200 font-bold py-3.5 rounded-xl transition-all shadow-lg active:scale-95 text-sm md:text-base">Receive</button>
+              <button onClick={goToWallet} className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 text-sm md:text-base">Send</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className={`grid grid-cols-3 gap-2 mb-8`}>
-        <ActionButton icon={<RefreshCw size={20} />} label="Swap" onClick={() => setShowSwap(true)} active theme={theme} />
-        <ActionButton icon={<TrendingUp size={20} />} label="Stake" onClick={handleComingSoon} theme={theme} />
-        <ActionButton icon={<Layers size={20} />} label="Sell" onClick={handleComingSoon} theme={theme} />
+      <div className={`grid grid-cols-4 gap-2 mb-8`}>
+        <ActionButton icon={<RefreshCw size={18} />} label="Swap" onClick={() => setShowSwap(true)} active theme={theme} />
+        <ActionButton icon={<WalletCards size={18} className="text-emerald-500" />} label="Connect" onClick={() => setShowConnect(true)} theme={theme} />
+        <ActionButton icon={<TrendingUp size={18} />} label="Stake" onClick={handleComingSoon} theme={theme} />
+        <ActionButton icon={<Layers size={18} />} label="Sell" onClick={handleComingSoon} theme={theme} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20">
