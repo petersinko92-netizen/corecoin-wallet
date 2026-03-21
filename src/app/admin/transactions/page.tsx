@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Check, X, Clock, Search, Filter } from 'lucide-react';
+import { Check, X, Clock, Search, Filter, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminTransactionsPage() {
@@ -147,7 +147,18 @@ export default function AdminTransactionsPage() {
                         <td className="p-4">
                            <div className="text-[11px] text-zinc-500">
                               <div className="font-bold text-slate-700">{tx.metadata?.network || 'N/A'}</div>
-                              <div className="font-mono truncate w-32">{tx.metadata?.to_address}</div>
+                              {tx.metadata?.to_address && (
+                                <div 
+                                  className="font-mono flex items-center gap-2 cursor-pointer hover:text-emerald-600 transition-colors group"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(tx.metadata.to_address);
+                                    toast.success("Address space Copied!");
+                                  }}
+                                >
+                                  <span className="truncate w-32">{tx.metadata.to_address}</span>
+                                  <Copy size={12} className="opacity-0 group-hover:opacity-100" />
+                                </div>
+                              )}
                            </div>
                         </td>
                         <td className="p-4 text-right">

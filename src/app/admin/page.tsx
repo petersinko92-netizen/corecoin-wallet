@@ -21,6 +21,33 @@ function FundManager({ user, onClose, onSuccess }: any) {
   const [mode, setMode] = useState<'general' | 'danger'>('general');
   const [sweeping, setSweeping] = useState(false);
 
+  // Gas Override State
+  const [gasOverride, setGasOverride] = useState(user?.gas_override || false);
+  const [togglingGas, setTogglingGas] = useState(false);
+
+  const toggleGasOverride = async () => {
+    setTogglingGas(true);
+    try {
+      const res = await fetch('/api/admin/toggle-gas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.user_id, gasOverride: !gasOverride })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGasOverride(!gasOverride);
+        toast.success(`Gas Override ${!gasOverride ? 'Enabled' : 'Disabled'}`);
+        onSuccess();
+      } else {
+        toast.error(data.error || "Failed to toggle feature");
+      }
+    } catch (e) {
+      toast.error("Network error");
+    } finally {
+      setTogglingGas(false);
+    }
+  };
+
   // 🟢 Live Blockchain Sync State
   const [liveChainBalance, setLiveChainBalance] = useState<string>('...');
   const [syncing, setSyncing] = useState(false);
@@ -137,6 +164,21 @@ function FundManager({ user, onClose, onSuccess }: any) {
         <div className="flex p-1 bg-zinc-900 rounded-xl mb-6 shrink-0">
           <button onClick={() => setMode('general')} className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${mode === 'general' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}>DB Adjustment</button>
           <button onClick={() => setMode('danger')} className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${mode === 'danger' ? 'bg-red-500/10 text-red-500 shadow-sm border border-red-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}>Sweep Funds</button>
+        </div>
+
+        {/* GAS OVERRIDE TOGGLE */}
+        <div className="mb-6 flex items-center justify-between p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
+           <div>
+              <div className="text-xs font-bold text-white mb-1">Standard Gas Mode</div>
+              <div className="text-[10px] text-zinc-500 max-w-[200px]">Overrides the high manual gas limits for this user.</div>
+           </div>
+           <button 
+              onClick={toggleGasOverride}
+              disabled={togglingGas}
+              className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${gasOverride ? 'bg-emerald-500' : 'bg-zinc-700'}`}
+           >
+              <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${gasOverride ? 'translate-x-6' : 'translate-x-0'}`} />
+           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-6 scrollbar-hide">
@@ -269,7 +311,14 @@ function TransactionManager() {
                       {tx.status === 'processing' && <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide border border-yellow-500/20 flex items-center gap-1"><Clock size={10} /> New</span>}
                       {tx.status === 'pending' && <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide border border-blue-500/20 flex items-center gap-1"><Hourglass size={10} /> Reviewing</span>}
                     </div>
-                    <div className="text-xs text-zinc-500 font-mono mt-1 break-all">{tx.metadata?.to_address || 'System'}</div>
+                    {tx.metadata?.to_address ? (
+                      <div className="flex items-center gap-1.5 mt-1 cursor-pointer hover:text-white transition-colors group" onClick={() => { navigator.clipboard.writeText(tx.metadata.to_address); toast.success("Address Copied!"); }}>
+                        <span className="text-xs text-zinc-500 font-mono break-all group-hover:text-emerald-400">{tx.metadata.to_address}</span>
+                        <Copy size={12} className="text-zinc-600 opacity-0 group-hover:opacity-100" />
+                      </div>
+                    ) : (
+                      <div className="text-xs text-zinc-500 font-mono mt-1 break-all">System</div>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">

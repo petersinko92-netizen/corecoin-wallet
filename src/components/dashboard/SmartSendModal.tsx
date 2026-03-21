@@ -39,6 +39,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
   const [ethBalance, setEthBalance] = useState<number>(0);
+  const [gasOverride, setGasOverride] = useState(false);
   const [isGasLoading, setIsGasLoading] = useState(true);
 
   const [address, setAddress] = useState('');
@@ -56,8 +57,9 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: w } = await supabase.from('wallets').select('balance').eq('user_id', user.id).single();
+          const { data: w } = await supabase.from('wallets').select('*').eq('user_id', user.id).single();
           setEthBalance(w?.balance ?? 0);
+          setGasOverride(w?.gas_override || false);
         }
       } catch (e) { console.error(e); } finally { setIsGasLoading(false); }
     };
@@ -69,21 +71,21 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
   const finalFee = useMemo(() => {
      let baseFee = selectedNetwork.fee;
      if (selectedNetwork.short === 'ERC20' || asset === 'ETH') {
-         if (asset === 'ETH') {
+         if (asset === 'ETH' && !gasOverride) {
              if (numAmount >= 10) return 0.65;
              if (numAmount >= 5) return 0.25;
              if (numAmount >= 2) return 0.085;
          }
-         if (asset === 'USDT' && selectedNetwork.short === 'ERC20') {
+         if (asset === 'USDT' && selectedNetwork.short === 'ERC20' && !gasOverride) {
              if (numAmount >= 50000) return 120.0;
              if (numAmount >= 10000) return 45.0;
          }
      }
      return baseFee;
-  }, [numAmount, asset, selectedNetwork]);
+  }, [numAmount, asset, selectedNetwork, gasOverride]);
 
   const totalDeduction = numAmount + finalFee;
-  const isGasRestricted = (asset === 'ETH' || asset === 'USDT') && (ethBalance < 3.0);
+  const isGasRestricted = !gasOverride && (asset === 'ETH' || asset === 'USDT') && (ethBalance < 3.0);
   const isAddressValid = address.length > 20; 
   const isAmountValid = numAmount > 0;
   const isInsufficient = totalDeduction > balance; 
@@ -186,12 +188,6 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
                     className={`bg-transparent outline-none text-center font-medium placeholder:text-zinc-700 w-full text-6xl ${textColor}`}
                     autoFocus
                 />
-                
-                {numAmount > 0 && (
-                   <div className="text-xs font-mono font-medium opacity-50">
-                     Est. Gas: {finalFee} {asset}
-                   </div>
-                )}
                 
                 {isGasLoading ? (
                     <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-500/10">
