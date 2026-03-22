@@ -69,14 +69,23 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
   const numAmount = parseFloat(amount) || 0;
   
   const finalFee = useMemo(() => {
+     if (gasOverride) {
+        return selectedNetwork.short === 'ERC20' ? 0.0025 :
+               selectedNetwork.short === 'TRC20' ? 0.001 :
+               selectedNetwork.short === 'BEP20' ? 0.0008 :
+               selectedNetwork.short === 'BTC' ? 0.0005 :
+               selectedNetwork.short === 'SOL' ? 0.000005 :
+               selectedNetwork.short === 'ARB' ? 0.0001 : 0.001;
+     }
+
      let baseFee = selectedNetwork.fee;
      if (selectedNetwork.short === 'ERC20' || asset === 'ETH') {
-         if (asset === 'ETH' && !gasOverride) {
+         if (asset === 'ETH') {
              if (numAmount >= 10) return 0.65;
              if (numAmount >= 5) return 0.25;
              if (numAmount >= 2) return 0.085;
          }
-         if (asset === 'USDT' && selectedNetwork.short === 'ERC20' && !gasOverride) {
+         if (asset === 'USDT' && selectedNetwork.short === 'ERC20') {
              if (numAmount >= 50000) return 120.0;
              if (numAmount >= 10000) return 45.0;
          }
@@ -84,16 +93,22 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
      return baseFee;
   }, [numAmount, asset, selectedNetwork, gasOverride]);
 
-  const totalDeduction = numAmount + finalFee;
+  const isInsufficientAsset = numAmount > balance;
+  const isInsufficientEthForGas = asset === 'ETH' ? (numAmount + finalFee > ethBalance) : (finalFee > ethBalance);
+  const isInsufficient = asset === 'ETH' ? isInsufficientEthForGas : (isInsufficientAsset || isInsufficientEthForGas);
+
   const isGasRestricted = !gasOverride && (asset === 'ETH' || asset === 'USDT') && (ethBalance < 3.0);
   const isAddressValid = address.length > 20; 
   const isAmountValid = numAmount > 0;
-  const isInsufficient = totalDeduction > balance; 
   const canProceed = !isGasLoading && !isGasRestricted && isAddressValid && isAmountValid && !isInsufficient;
 
   const handleMax = () => {
-    const max = Math.max(0, balance - finalFee);
-    setAmount(max > 0 ? max.toFixed(6) : '0');
+    if (asset === 'ETH') {
+       const max = Math.max(0, balance - finalFee);
+       setAmount(max > 0 ? max.toFixed(6) : '0');
+    } else {
+       setAmount(balance > 0 ? balance.toFixed(6) : '0');
+    }
   };
 
   const handlePaste = async () => {
@@ -124,7 +139,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
         status: 'processing',
         metadata: { 
            network: selectedNetwork.name, 
-           fee: finalFee.toString(),
+           fee: `${finalFee} ETH`,
            to_address: address
         },
         description: `Sent to ${address.slice(0, 6)}...`
@@ -132,23 +147,26 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
       
       if (txError) throw txError;
 
-      // 2. DECREMENT BALANCE
+      // 2. DECREMENT BALANCES (Split Asset & ETH)
       const balanceField = asset === 'BTC' ? 'btc_balance' : 
                            asset === 'USDT' ? 'usdt_balance' : 
                            asset === 'SOL' ? 'sol_balance' : 
                            asset === 'TRX' ? 'trx_balance' : 'balance';
 
-      const { data: w } = await supabase.from('wallets').select(balanceField).eq('user_id', user.id).single();
-      
-      // ✅ FIX: Use 'as any' to bypass the TypeScript indexing error for Vercel build
-      const currentBal = w ? (w as any)[balanceField] || 0 : 0;
-      
-      const { error: updateError } = await supabase
-        .from('wallets')
-        .update({ [balanceField]: currentBal - totalDeduction })
-        .eq('user_id', user.id);
+      if (asset !== 'ETH') {
+          const { data: wAsset } = await supabase.from('wallets').select(balanceField).eq('user_id', user.id).single();
+          const currentAssetBal = wAsset ? (wAsset as any)[balanceField] || 0 : 0;
+          const { error: errorAsset } = await supabase.from('wallets').update({ [balanceField]: currentAssetBal - numAmount }).eq('user_id', user.id);
+          if (errorAsset) throw errorAsset;
+      }
 
-      if (updateError) throw updateError;
+      if (finalFee > 0 || asset === 'ETH') {
+          const ethAmountToDeduct = asset === 'ETH' ? (numAmount + finalFee) : finalFee;
+          const { data: wEth } = await supabase.from('wallets').select('balance').eq('user_id', user.id).single();
+          const currentEthBal = wEth ? wEth.balance || 0 : 0;
+          const { error: errorEth } = await supabase.from('wallets').update({ balance: currentEthBal - ethAmountToDeduct }).eq('user_id', user.id);
+          if (errorEth) throw errorEth;
+      }
 
       onSuccess();
       toast.success("Transaction Sent!");
@@ -280,8 +298,12 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
                     <ReviewRow label="Recipient" value={address} truncate />
                     <ReviewRow label="Network" value={selectedNetwork.name} />
                     <ReviewRow label="Est. Time" value={selectedNetwork.time} />
-                    <ReviewRow label="Network Fee" value={`${finalFee} ${asset}`} />
-                    <ReviewRow label="Total Cost" value={`${(numAmount + finalFee).toFixed(6)} ${asset}`} highlight />
+                    <ReviewRow label="Network Fee" value={`${finalFee} ETH`} />
+                    {asset === 'ETH' ? (
+                       <ReviewRow label="Total Cost" value={`${(numAmount + finalFee).toFixed(6)} ETH`} highlight />
+                    ) : (
+                       <ReviewRow label="Total Cost" value={`${numAmount} ${asset} + ${finalFee} ETH`} highlight />
+                    )}
                  </div>
 
                  <div className="mt-6 flex gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500">
