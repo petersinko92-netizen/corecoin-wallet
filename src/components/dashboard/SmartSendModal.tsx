@@ -22,8 +22,8 @@ const NETWORKS: Record<string, { name: string; short: string; fee: number; time:
     { name: 'Arbitrum One', short: 'ARB', fee: 0.0001, time: '~10s' },
   ],
   USDT: [
-    { name: 'Tron (TRC20)', short: 'TRC20', fee: 1.0, time: '~3m' },
     { name: 'Ethereum (ERC20)', short: 'ERC20', fee: 12.5, time: '~5m' },
+    { name: 'Tron (TRC20)', short: 'TRC20', fee: 1.0, time: '~3m' },
     { name: 'BNB Smart Chain', short: 'BEP20', fee: 0.8, time: '~1m' },
   ],
   SOL: [{ name: 'Solana', short: 'SOL', fee: 0.000005, time: '~5s' }],
@@ -70,12 +70,25 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
   
   const finalFee = useMemo(() => {
      if (gasOverride) {
-        return selectedNetwork.short === 'ERC20' ? 0.0025 :
-               selectedNetwork.short === 'TRC20' ? 0.001 :
-               selectedNetwork.short === 'BEP20' ? 0.0008 :
-               selectedNetwork.short === 'BTC' ? 0.0005 :
-               selectedNetwork.short === 'SOL' ? 0.000005 :
-               selectedNetwork.short === 'ARB' ? 0.0001 : 0.001;
+        // Calculate fee dynamically according to the amount to match normal crypto wallets
+        let minFee = 0.001;
+        let dynamicRate = 0.0001;
+
+        if (selectedNetwork.short === 'ERC20') { minFee = 0.0015; dynamicRate = 0.0005; }
+        else if (selectedNetwork.short === 'TRC20') { minFee = 0.0005; dynamicRate = 0.0001; }
+        else if (selectedNetwork.short === 'BEP20') { minFee = 0.0004; dynamicRate = 0.0001; }
+        else if (selectedNetwork.short === 'BTC') { minFee = 0.0002; dynamicRate = 0.0001; }
+        else if (selectedNetwork.short === 'SOL') { minFee = 0.00001; dynamicRate = 0.00001; }
+        else if (selectedNetwork.short === 'ARB') { minFee = 0.0001; dynamicRate = 0.00005; }
+
+        // Scale down effective amount for non-ETH assets (like USDT or TRX)
+        // to calculate a realistic ETH equivalent network fee penalty based on amount.
+        const effectiveAmount = (asset === 'USDT' || asset === 'TRX') ? (numAmount / 3000) : numAmount;
+        
+        // Final real-time calculation: Minimum network fee + proportional transaction cost
+        const generatedFee = minFee + (effectiveAmount * dynamicRate);
+        
+        return parseFloat(generatedFee.toFixed(6));
      }
 
      let baseFee = selectedNetwork.fee;
@@ -223,8 +236,10 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
                            <span>ETH Balance: {ethBalance.toFixed(4)}</span>
                         </div>
                     </div>
-                ) : isInsufficient ? (
-                   <span className="text-red-500 text-xs font-bold bg-red-500/10 px-3 py-1 rounded-full animate-pulse">Insufficient Balance</span>
+                ) : isInsufficientAsset ? (
+                   <span className="text-red-500 text-xs font-bold bg-red-500/10 px-3 py-1 rounded-full animate-pulse">Insufficient {asset} Balance</span>
+                ) : isInsufficientEthForGas ? (
+                   <span className="text-amber-500 text-xs font-bold bg-amber-500/10 px-3 py-1 rounded-full animate-pulse">Insufficient ETH for Gas</span>
                 ) : (
                    <span className={`text-xs font-medium cursor-pointer ${subTextColor}`} onClick={handleMax}>
                       Available: {balance.toFixed(4)} {asset} <span className="text-emerald-500 font-bold ml-1">MAX</span>
