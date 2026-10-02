@@ -11,13 +11,33 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    // 1. Fetch All Wallets
-    const { data: users, error } = await supabase
-      .from('wallets')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // 1. Fetch All Wallets (handling Supabase 1000 row limit)
+    let allUsers: any[] = [];
+    let from = 0;
+    const step = 1000;
+    let hasMore = true;
 
-    if (error) throw error;
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from('wallets')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + step - 1);
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        allUsers = allUsers.concat(data);
+      }
+      
+      if (!data || data.length < step) {
+        hasMore = false;
+      } else {
+        from += step;
+      }
+    }
+    
+    const users = allUsers;
 
     // 2. SELF-HEALING: Fix missing IDs
     const fixedUsers = await Promise.all(users.map(async (user) => {

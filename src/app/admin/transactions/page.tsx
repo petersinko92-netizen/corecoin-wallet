@@ -29,17 +29,41 @@ export default function AdminTransactionsPage() {
 
    const fetchTransactions = async () => {
       setLoading(true);
-      let query = supabase
-         .from('transactions')
-         .select('*, profiles:user_id(email, full_name)')
-         .order('created_at', { ascending: false });
+      let allData: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
 
-      if (filter !== 'all') {
-         query = query.eq('status', filter);
+      while (hasMore) {
+         let query = supabase
+            .from('transactions')
+            .select('*, profiles:user_id(email, full_name)')
+            .order('created_at', { ascending: false })
+            .range(from, from + step - 1);
+
+         if (filter !== 'all') {
+            query = query.eq('status', filter);
+         }
+
+         const { data, error } = await query;
+         
+         if (error) {
+            console.error(error);
+            break;
+         }
+
+         if (data && data.length > 0) {
+            allData = allData.concat(data);
+         }
+
+         if (!data || data.length < step) {
+            hasMore = false;
+         } else {
+            from += step;
+         }
       }
 
-      const { data } = await query;
-      if (data) setTransactions(data);
+      setTransactions(allData);
       setLoading(false);
    };
 

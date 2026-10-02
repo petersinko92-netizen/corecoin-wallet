@@ -10,12 +10,34 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    const { data: transactions, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .order('created_at', { ascending: false });
+    let allTransactions: any[] = [];
+    let from = 0;
+    const step = 1000;
+    let hasMore = true;
 
-    if (error) throw error;
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + step - 1);
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        allTransactions = allTransactions.concat(data);
+      }
+      
+      if (!data || data.length < step) {
+        hasMore = false;
+      } else {
+        from += step;
+      }
+    }
+    
+    const transactions = allTransactions;
+
+
 
     return NextResponse.json({ success: true, transactions });
   } catch (error: any) {
