@@ -6,7 +6,7 @@ import { Mail, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase';
 
-const OTP_LENGTH = 8; 
+const OTP_LENGTH = 6; 
 
 // 1. Logic moved here to be wrapped in Suspense
 function VerifyEmailForm() {
