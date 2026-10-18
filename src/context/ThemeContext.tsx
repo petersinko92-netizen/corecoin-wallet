@@ -19,7 +19,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setMounted(true);
     
     // 2. Check local storage, but default to dark if nothing is found
-    const saved = localStorage.getItem('corecoin-theme') as Theme;
+    const saved = localStorage.getItem('cryptochains-theme') as Theme;
     
     if (saved) {
       setTheme(saved);
@@ -36,7 +36,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
-    localStorage.setItem('corecoin-theme', newTheme);
+    localStorage.setItem('cryptochains-theme', newTheme);
     
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(newTheme);

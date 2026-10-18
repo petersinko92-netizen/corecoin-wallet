@@ -6,7 +6,7 @@ export function CookieConsent() {
 
   useEffect(() => {
     // 1. Check if the user has ALREADY accepted
-    const hasConsent = localStorage.getItem('corecoin_cookie_consent');
+    const hasConsent = localStorage.getItem('cryptochains_cookie_consent');
     
     // 2. If not, show the banner after a short delay
     if (!hasConsent) {
@@ -17,13 +17,13 @@ export function CookieConsent() {
 
   const handleAccept = () => {
     // 3. Save the choice to the browser's memory
-    localStorage.setItem('corecoin_cookie_consent', 'true');
+    localStorage.setItem('cryptochains_cookie_consent', 'true');
     setIsVisible(false);
   };
 
   const handleReject = () => {
     // Optional: You can store a 'false' if you want to remember they rejected
-    localStorage.setItem('corecoin_cookie_consent', 'false');
+    localStorage.setItem('cryptochains_cookie_consent', 'false');
     setIsVisible(false);
   };
 

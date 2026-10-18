@@ -16,10 +16,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Logo Header */}
       <Link href="/" className="mb-8 flex items-center gap-3 relative z-10 group hover:scale-105 transition-transform duration-300">
         <div className="relative w-10 h-10">
-          <Image src="/icon.svg" alt="Corecoin" fill className="object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" priority />
+          <Image src="/icon.svg" alt="CryptoChains" fill className="object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" priority />
         </div>
         <span className="font-outfit text-2xl font-extrabold tracking-tight uppercase group-hover:text-emerald-400 transition-colors">
-          CORECOIN
+          CRYPTOCHAINS
         </span>
       </Link>
 

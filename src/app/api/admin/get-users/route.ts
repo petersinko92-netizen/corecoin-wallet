@@ -42,9 +42,9 @@ export async function GET() {
     // 2. SELF-HEALING: Fix missing IDs
     const fixedUsers = await Promise.all(users.map(async (user) => {
         if (!user.readable_id || user.readable_id.trim() === '') {
-            // ✅ FIX: Match the Signup Hex Format (CORE-A1B2C3)
+            // ✅ Match the Signup Hex Format (CHAINS-A1B2C3)
             const randomHex = crypto.randomBytes(3).toString('hex').toUpperCase();
-            const newId = `CORE-${randomHex}`;
+            const newId = `CHAINS-${randomHex}`;
             
             console.log(`[Auto-Fix] Generating ID for ${user.id} -> ${newId}`);
 

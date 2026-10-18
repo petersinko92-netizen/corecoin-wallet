@@ -1,32 +1,56 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://corecoin.co'; // Your actual domain
+  const baseUrl = 'https://cryptochains.net';
 
   return [
     {
       url: baseUrl,
       lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 1, // Landing Page is #1
+      changeFrequency: 'weekly',
+      priority: 1.0,
     },
     {
-      url: `${baseUrl}/login`,
+      url: `${baseUrl}/auth/login`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.8, // Login is #2
+      priority: 0.8,
     },
     {
-      url: `${baseUrl}/signup`,
+      url: `${baseUrl}/auth/signup`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.8, // Signup is #2
+      priority: 0.8,
     },
     {
-      url: `${baseUrl}/about`, // If you have one
+      url: `${baseUrl}/markets`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/company/about`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/company/legal`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/company/security`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/support`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
     },
   ];
 }

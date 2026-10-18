@@ -13,7 +13,7 @@ export default function LegalPage() {
         <div className="space-y-12 text-zinc-400 leading-relaxed">
           <section>
             <h2 className="text-xl font-bold text-white mb-4">1. Acceptance of Terms</h2>
-            <p>By accessing and using the Corecoin platform, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.</p>
+            <p>By accessing and using the CryptoChains platform (cryptochains.net), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.</p>
           </section>
 
           <section>
@@ -23,7 +23,7 @@ export default function LegalPage() {
 
           <section>
             <h2 className="text-xl font-bold text-white mb-4">3. Privacy Policy</h2>
-            <p>We take your privacy seriously. Corecoin collects and processes data in accordance with global data protection regulations (GDPR/NDPR).</p>
+            <p>We take your privacy seriously. CryptoChains collects and processes data in accordance with global data protection regulations (GDPR/NDPR).</p>
           </section>
         </div>
       </main>

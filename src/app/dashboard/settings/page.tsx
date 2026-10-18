@@ -223,13 +223,13 @@ export default function SettingsPage() {
                icon={Mail} 
                label="Contact Support" 
                subLabel="Average response: 2 hrs"
-               action={() => window.location.href = 'mailto:support@corecoin.com'} 
+               action={() => window.location.href = 'mailto:support@cryptochains.net'} 
              />
              <SettingRow 
                icon={FileText} 
                label="Legal" 
                subLabel="Terms of Service & Privacy"
-               action={() => {}} 
+               action={() => router.push('/company/legal')} 
              />
           </div>
         </div>
@@ -244,7 +244,7 @@ export default function SettingsPage() {
            </button>
            
            <div className="mt-8 text-center">
-              <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Corecoin v1.2.0</p>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">CryptoChains v1.2.0</p>
               <p className="text-[10px] text-zinc-500 mt-1">Secured by Supabase & Ethereum</p>
            </div>
         </div>

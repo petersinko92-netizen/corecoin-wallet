@@ -23,7 +23,7 @@ export default function AboutPage() {
             Building the <span className="text-zinc-600">Future of Finance.</span>
           </h1>
           <p className="text-zinc-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-            Corecoin was founded with a simple mission: to make digital assets accessible, secure, and usable for everyone, everywhere.
+            CryptoChains was founded with a simple mission: to make digital assets accessible, secure, and usable for everyone, everywhere.
           </p>
         </div>
 

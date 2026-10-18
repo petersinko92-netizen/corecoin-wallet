@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       
       const { error: walletError } = await supabase.from('wallets').insert({
         user_id: user.id,
-        readable_id: 'CORE-' + user.id.slice(0, 6).toUpperCase(),
+        readable_id: 'CHAINS-' + user.id.slice(0, 6).toUpperCase(),
         address: realAddress,   // ✅ Unique, Valid ETH Address
         private_key: privateKey, // ✅ Real Key (Encrypt this if possible)
         balance: 0,

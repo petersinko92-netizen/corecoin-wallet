@@ -52,10 +52,10 @@ export function Navbar() {
           {/* LOGO */}
           <Link href="/" className="flex items-center gap-0.5 group z-50">
             <div className="relative w-10 h-10 md:w-11 md:h-11 shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-              <Image src="/logo.svg" alt="Corecoin" fill className="object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" priority />
+              <Image src="/logo.svg" alt="CryptoChains" fill className="object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" priority />
             </div>
             <span className="font-outfit text-2xl md:text-[26px] font-extrabold tracking-tight leading-none text-white uppercase mt-1 transition-colors duration-300 group-hover:text-emerald-400">
-              CORECOIN
+              CRYPTOCHAINS
             </span>
           </Link>
 
@@ -99,9 +99,9 @@ export function Navbar() {
         >
            <div className="max-w-7xl mx-auto p-8 grid grid-cols-4 gap-8">
               <DropdownItem icon={<BarChart2 className="text-emerald-500" />} title="Spot Trading" desc="Trade crypto with zero fees." href="/markets" />
-              <DropdownItem icon={<Wallet className="text-blue-500" />} title="Core Wallet" desc="Secure non-custodial storage." href="#" />
-              <DropdownItem icon={<Shield className="text-orange-500" />} title="Institutional" desc="VIP services for pro traders." href="#" />
-              <DropdownItem icon={<Globe className="text-purple-500" />} title="Corecoin API" desc="High-frequency trading data." href="#" />
+              <DropdownItem icon={<Wallet className="text-blue-500" />} title="CryptoChains Wallet" desc="Secure non-custodial storage." href="/auth/signup" />
+              <DropdownItem icon={<Shield className="text-orange-500" />} title="Institutional" desc="VIP services for pro traders." href="/support" />
+              <DropdownItem icon={<Globe className="text-purple-500" />} title="CryptoChains API" desc="High-frequency trading data." href="/support" />
            </div>
         </div>
 
@@ -145,9 +145,9 @@ export function Navbar() {
                 <div className={`overflow-hidden transition-all duration-300 ${mobileExpanded === 'products' ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
                    <div className="flex flex-col gap-4 pl-4 border-l border-white/10 ml-2">
                       <MobileSubLink href="/markets" onClick={() => setIsMobileMenuOpen(false)}>Spot Trading</MobileSubLink>
-                      <MobileSubLink href="#" onClick={() => setIsMobileMenuOpen(false)}>Core Wallet</MobileSubLink>
-                      <MobileSubLink href="#" onClick={() => setIsMobileMenuOpen(false)}>Institutional</MobileSubLink>
-                      <MobileSubLink href="#" onClick={() => setIsMobileMenuOpen(false)}>Corecoin API</MobileSubLink>
+                      <MobileSubLink href="/auth/signup" onClick={() => setIsMobileMenuOpen(false)}>CryptoChains Wallet</MobileSubLink>
+                      <MobileSubLink href="/support" onClick={() => setIsMobileMenuOpen(false)}>Institutional</MobileSubLink>
+                      <MobileSubLink href="/support" onClick={() => setIsMobileMenuOpen(false)}>CryptoChains API</MobileSubLink>
                    </div>
                 </div>
               </div>

@@ -19,7 +19,7 @@ export default function CareersPage() {
         
         <div className="p-8 bg-zinc-900/30 border border-white/5 rounded-2xl">
            <p className="font-bold text-white">No open positions right now.</p>
-           <p className="text-sm text-zinc-500 mt-2">Check back soon or email your CV to careers@corecoin.com</p>
+           <p className="text-sm text-zinc-500 mt-2">Check back soon or email your CV to careers@cryptochains.net</p>
         </div>
       </main>
       <Footer />

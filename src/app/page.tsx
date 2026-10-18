@@ -11,32 +11,32 @@ import { CookieConsent } from '@/components/ui/CookieConsent';
 export default function LandingPage() {
   
   // 🔍 SEO: JSON-LD Structured Data
-  // This tells Google we are a legitimate Organization and helps get Sitelinks.
+  // Standardized schema without fake phone numbers to prevent Google SafeSearch/Merchant penalties
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "Organization",
-        "name": "CoreCoin",
-        "url": "https://corecoin.co",
-        "logo": "https://corecoin.co/icon-512.png",
+        "name": "CryptoChains",
+        "url": "https://cryptochains.net",
+        "logo": "https://cryptochains.net/icon-512.png",
         "sameAs": [
-          "https://twitter.com/corecoin",
-          "https://instagram.com/corecoin"
+          "https://twitter.com/cryptochains",
+          "https://github.com/cryptochains"
         ],
         "contactPoint": {
           "@type": "ContactPoint",
-          "telephone": "+1-555-019-2834", // Optional: Add real support number or remove
+          "email": "support@cryptochains.net",
           "contactType": "customer service"
         }
       },
       {
         "@type": "WebSite",
-        "name": "CoreCoin Wallet",
-        "url": "https://corecoin.co",
+        "name": "CryptoChains Wallet",
+        "url": "https://cryptochains.net",
         "potentialAction": {
           "@type": "SearchAction",
-          "target": "https://corecoin.co/search?q={search_term_string}",
+          "target": "https://cryptochains.net/search?q={search_term_string}",
           "query-input": "required name=search_term_string"
         }
       }

@@ -12,11 +12,11 @@ export async function POST(request: Request) {
 
     // TODO: CONNECT TO DATABASE OR EMAIL PROVIDER HERE
     // Example: await db.tickets.create({ email, type, description, status: 'OPEN' })
-    // Example: await resend.emails.send({ to: 'support@corecoin.com', subject: type, text: description })
+    // Example: await resend.emails.send({ to: 'support@cryptochains.net', subject: type, text: description })
 
     console.log("SERVER RECEIVED TICKET:", body); // Verify this in your VS Code terminal
 
-    return NextResponse.json({ success: true, ticketId: `CORE-${Date.now().toString().slice(-4)}` });
+    return NextResponse.json({ success: true, ticketId: `CHAINS-${Date.now().toString().slice(-4)}` });
     
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

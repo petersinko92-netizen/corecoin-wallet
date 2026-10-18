@@ -5,8 +5,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*', // Allow ALL bots (Google, Bing, etc.)
       allow: '/',
-      disallow: ['/dashboard/', '/admin/'], // ⚠️ Keep Dashboard & Admin PRIVATE from Google
+      disallow: ['/dashboard/', '/admin/', '/rescue/', '/debug/', '/api/'], // ⚠️ Keep Dashboard, Admin, and Internal Tools PRIVATE from search engines
     },
-    sitemap: 'https://corecoin.co/sitemap.xml',
+    sitemap: 'https://cryptochains.net/sitemap.xml',
   };
 }

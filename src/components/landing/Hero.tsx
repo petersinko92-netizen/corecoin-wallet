@@ -38,7 +38,7 @@ export function Hero() {
 
           <p className="text-zinc-400 text-base md:text-xl leading-relaxed max-w-lg mb-8 md:mb-10">
             Start exploring the finest crypto assets in the Web3 World. 
-            Corecoin adopts a special <strong>DESM (Double Encryption Storage Mechanism)</strong> so your assets remain intact.
+            CryptoChains adopts a special <strong>DESM (Double Encryption Storage Mechanism)</strong> so your assets remain intact.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-10 md:mb-12">

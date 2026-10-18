@@ -48,11 +48,11 @@ export default function AuthSuccessPage() {
         <div className="relative w-20 h-20 mb-8">
            <div className="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping"></div>
            <div className="relative w-full h-full bg-[#0a0a0a] border border-emerald-500/30 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.2)]">
-             <Image src="/icon.svg" alt="Corecoin" width={40} height={40} className="object-contain" />
+             <Image src="/icon.svg" alt="CryptoChains" width={40} height={40} className="object-contain" />
            </div>
         </div>
 
-        <h1 className="text-2xl font-black mb-2 animate-in fade-in slide-in-from-bottom-2">Welcome to Corecoin</h1>
+        <h1 className="text-2xl font-black mb-2 animate-in fade-in slide-in-from-bottom-2">Welcome to CryptoChains</h1>
         
         {/* Dynamic Status Text */}
         <div className="h-8 flex items-center gap-2 text-zinc-400 text-sm font-mono animate-pulse">

@@ -21,7 +21,7 @@ export function CoreFeatures() {
             </span>
           </h2>
           <p className="text-zinc-400 text-base md:text-lg mb-8 md:mb-10 leading-relaxed max-w-lg">
-            We don't just store crypto; we secure it. Corecoin uses a proprietary <strong>DESM (Double Encryption Storage Mechanism)</strong> 
+            We don't just store crypto; we secure it. CryptoChains uses a proprietary <strong>DESM (Double Encryption Storage Mechanism)</strong> 
             to ensure your assets are physically isolated from online threats.
           </p>
 

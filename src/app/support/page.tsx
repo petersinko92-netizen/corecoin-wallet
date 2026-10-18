@@ -16,7 +16,7 @@ const FAQ_DATABASE: Record<string, Array<{q: string, a: string}>> = {
     { q: "How do I update my email address?", a: "For security reasons, email changes require a manual support ticket. Please submit a request using the form on this page." }
   ],
   "Trading": [
-    { q: "What are the trading fees?", a: "Standard fees are 0.1% for Maker/Taker. Using Corecoin (CORE) for fees gives you a 25% discount. VIP tiers offer rates as low as 0%." },
+    { q: "What are the trading fees?", a: "Standard fees are 0.1% for Maker/Taker. Using CryptoChains (CHAINS) for fees gives you a 25% discount. VIP tiers offer rates as low as 0%." },
     { q: "How do I place a Stop-Loss order?", a: "On the trade screen, switch from 'Limit' to 'Stop-Limit'. Enter your Stop price (trigger) and your Limit price (execution price)." },
     { q: "Why was my order partially filled?", a: "This happens when there isn't enough liquidity at your specific price. The remaining amount stays open until matched or cancelled." }
   ],
@@ -70,7 +70,7 @@ export default function SupportPage() {
     setChatStatus('connecting');
     setTimeout(() => {
       setChatStatus('active');
-      setChatMessages([{ sender: 'agent', text: 'Welcome to Corecoin Support! I am your virtual assistant. How can I help you today?' }]);
+      setChatMessages([{ sender: 'agent', text: 'Welcome to CryptoChains Support! I am your virtual assistant. How can I help you today?' }]);
     }, 1500);
   };
 
@@ -88,7 +88,7 @@ export default function SupportPage() {
       let reply = "I understand. An agent will review your account details shortly.";
       if (userMsg.toLowerCase().includes('deposit')) reply = "Deposit times vary by network. Have you checked your TXID on the block explorer?";
       if (userMsg.toLowerCase().includes('2fa')) reply = "For security reasons, 2FA resets must be done via the 'Reset 2FA' tool in the dashboard.";
-      if (userMsg.toLowerCase().includes('fee')) reply = "Our standard trading fee is 0.1%. You can lower this by holding CORE tokens.";
+      if (userMsg.toLowerCase().includes('fee')) reply = "Our standard trading fee is 0.1%. You can lower this by holding CHAINS tokens.";
       
       setChatMessages(prev => [...prev, { sender: 'agent', text: reply }]);
     }, 1000);
@@ -117,7 +117,7 @@ export default function SupportPage() {
          </div>
 
          <div className="max-w-3xl mx-auto text-center mt-8">
-            <h1 className="text-3xl md:text-5xl font-black mb-6">Corecoin Support</h1>
+            <h1 className="text-3xl md:text-5xl font-black mb-6">CryptoChains Support</h1>
             <div className="relative w-full max-w-xl mx-auto">
                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" />
                <input 

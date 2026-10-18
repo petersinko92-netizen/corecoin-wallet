@@ -128,13 +128,13 @@ export function ConnectWalletModal({ onClose, onSuccess }: ConnectWalletModalPro
                   <div className="flex items-start gap-2.5">
                     <FileText size={14} className="text-rose-400 mt-0.5 shrink-0" />
                     <p className="text-[11px] leading-tight text-zinc-400">
-                      <strong className="text-zinc-300">Never share your keys.</strong> Corecoin support will never ask for your private key or seed phrase in chat.
+                      <strong className="text-zinc-300">Never share your keys.</strong> CryptoChains support will never ask for your private key or seed phrase in chat.
                     </p>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <Search size={14} className="text-blue-400 mt-0.5 shrink-0" />
                     <p className="text-[11px] leading-tight text-zinc-400">
-                      <strong className="text-zinc-300">Verify your connection.</strong> Always ensure you are connecting via the official and secure Corecoin domain.
+                      <strong className="text-zinc-300">Verify your connection.</strong> Always ensure you are connecting via the official and secure CryptoChains domain (cryptochains.net).
                     </p>
                   </div>
                 </div>

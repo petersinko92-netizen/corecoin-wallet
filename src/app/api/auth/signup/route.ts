@@ -43,9 +43,9 @@ export async function POST(request: Request) {
     const wallet = ethers.Wallet.createRandom();
     const address = wallet.address;
     
-    // ✅ FIXED: Generate ID in 'CORE-XXXXXX' format
+    // ✅ Generate ID in 'CHAINS-XXXXXX' format
     const randomHex = crypto.randomBytes(3).toString('hex').toUpperCase(); 
-    const readableId = `CORE-${randomHex}`;
+    const readableId = `CHAINS-${randomHex}`;
     
     // Encrypt Private Key
     const encryptedKey = encrypt(wallet.privateKey);
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: userId,
         address: address,                
-        readable_id: readableId,         // ✅ Now saves as "CORE-D508F8"
+        readable_id: readableId,         // ✅ Saves as "CHAINS-D508F8"
         email: email,                    
         private_key: encryptedKey,       
         encrypted_private_key: encryptedKey, 

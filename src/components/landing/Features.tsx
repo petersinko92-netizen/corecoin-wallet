@@ -14,7 +14,7 @@ export function Features() {
         </h2>
         <p className="text-zinc-400 text-lg max-w-xl leading-relaxed">
           Everything you need to build wealth. From advanced trading tools to global payments, 
-          Corecoin is the infrastructure for your financial future.
+          CryptoChains is the infrastructure for your financial future.
         </p>
       </div>
 

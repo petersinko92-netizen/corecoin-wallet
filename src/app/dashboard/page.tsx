@@ -230,7 +230,7 @@ export default function DashboardPage() {
       {/* MOBILE HEADER */}
       <div className="lg:hidden flex items-center justify-between mb-8">
         <div className="flex flex-col">
-          <span className="font-bold text-xl tracking-tight">CORE</span>
+          <span className="font-bold text-xl tracking-tight">CHAINS</span>
           <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>Portfolio</span>
         </div>
         <div className="flex items-center gap-2">

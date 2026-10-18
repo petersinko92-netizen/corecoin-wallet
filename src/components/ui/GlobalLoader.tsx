@@ -20,7 +20,7 @@ export function GlobalLoader() {
         </div>
         
         <div className="text-center">
-          <h2 className="text-xl font-black text-white tracking-tight mb-1">CORECOIN</h2>
+          <h2 className="text-xl font-black text-white tracking-tight mb-1">CRYPTOCHAINS</h2>
           <p className="text-zinc-500 text-xs font-mono animate-pulse">ESTABLISHING SECURE CONNECTION...</p>
         </div>
       </div>

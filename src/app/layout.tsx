@@ -22,7 +22,7 @@ export const viewport: Viewport = {
 
 // 2. APP METADATA
 export const metadata: Metadata = {
-  title: "Corecoin | Beyond Digital Assets",
+  title: "CryptoChains | Beyond Digital Assets",
   description: "The secure, custodial standard for the digital economy.",
   manifest: "/manifest.json", 
   icons: {
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true, // Enables "App Mode"
     statusBarStyle: "black-translucent", // Glassy top bar
-    title: "CoreCoin",
+    title: "CryptoChains",
   },
   formatDetection: {
     telephone: false,

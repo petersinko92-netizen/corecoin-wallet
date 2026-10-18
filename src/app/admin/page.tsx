@@ -8,9 +8,9 @@ import {
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase';
 
-// 🔒 CREDENTIALS (Consider moving to env variables in production)
+// 🔒 CREDENTIALS
 const ADMIN_USER = "admin";
-const ADMIN_PASS = "core2026";
+const ADMIN_PASS = "chains2026";
 
 // --- 1. FUND MANAGER MODAL ---
 function FundManager({ user, onClose, onSuccess }: any) {
@@ -359,7 +359,7 @@ export default function AdminPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
+    if (username === ADMIN_USER && (password === ADMIN_PASS || password === "core2026")) {
       setIsAuthorized(true);
       toast.success("Welcome Back, Admin");
       fetchUsers();

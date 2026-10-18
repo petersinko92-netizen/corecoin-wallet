@@ -32,7 +32,7 @@ export function Sidebar() {
         if (data?.readable_id) {
             setUserId(data.readable_id);
         } else {
-            setUserId('CORE-User'); // Fallback just in case
+            setUserId('CHAINS-User'); // Fallback just in case
         }
       }
     };
@@ -66,7 +66,7 @@ export function Sidebar() {
           <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center text-emerald-500">
              <LayoutGrid size={18} />
           </div>
-          <span className={`font-bold tracking-tight text-xl ${theme === 'dark' ? 'text-white' : 'text-zinc-900'}`}>CORECOIN</span>
+          <span className={`font-bold tracking-tight text-xl ${theme === 'dark' ? 'text-white' : 'text-zinc-900'}`}>CRYPTOCHAINS</span>
         </div>
 
         {/* TRUST BADGE: USER ID */}

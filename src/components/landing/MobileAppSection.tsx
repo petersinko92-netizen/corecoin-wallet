@@ -26,7 +26,7 @@ export function MobileAppSection() {
           </h2>
           
           <p className="text-zinc-400 text-base md:text-lg mb-8 md:mb-10 leading-relaxed max-w-lg mx-auto lg:mx-0">
-            Stay connected to the market with the Corecoin App. Experience faster execution, real-time alerts, and biometric security right in your pocket.
+            Stay connected to the market with the CryptoChains App. Experience faster execution, real-time alerts, and biometric security right in your pocket.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start w-full sm:w-auto">
@@ -73,7 +73,7 @@ export function MobileAppSection() {
              {/* scale-110: Slight zoom to push edges out */}
              <Image 
                src="/mobile-app.jpg" 
-               alt="Corecoin Mobile Trading" 
+               alt="CryptoChains Mobile Trading" 
                fill
                className="object-cover md:object-contain scale-110"
                priority

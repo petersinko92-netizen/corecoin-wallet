@@ -18,13 +18,13 @@ export function Footer() {
               <div className="relative w-8 h-8 flex items-center justify-center">
                 <Image 
                   src="/icon.svg" 
-                  alt="Corecoin" 
+                  alt="CryptoChains" 
                   fill
                   className="object-contain"
                 />
               </div>
               <span className="font-outfit text-xl font-extrabold tracking-tight text-white uppercase group-hover:text-emerald-400 transition-colors">
-                CORECOIN
+                CRYPTOCHAINS
               </span>
             </Link>
             <p className="text-zinc-500 text-sm leading-relaxed mb-8 max-w-sm">
@@ -43,11 +43,11 @@ export function Footer() {
           <div>
             <h4 className="text-white font-bold mb-6">Products</h4>
             <ul className="space-y-4 text-sm text-zinc-500">
-              <li><FooterLink href="#">Buy Crypto</FooterLink></li>
-              <li><FooterLink href="#">Spot Market</FooterLink></li>
-              <li><FooterLink href="#">Corecoin Earn</FooterLink></li>
-              <li><FooterLink href="#">Corecoin API</FooterLink></li>
-              <li><FooterLink href="#">Institutional Services</FooterLink></li>
+              <li><FooterLink href="/markets">Buy Crypto</FooterLink></li>
+              <li><FooterLink href="/markets">Spot Market</FooterLink></li>
+              <li><FooterLink href="/auth/signup">CryptoChains Earn</FooterLink></li>
+              <li><FooterLink href="/support">CryptoChains API</FooterLink></li>
+              <li><FooterLink href="/support">Institutional Services</FooterLink></li>
             </ul>
           </div>
 
@@ -97,7 +97,7 @@ export function Footer() {
           {/* THE DISCLAIMER TEXT (FIXED FOR CUSTODIAL EXCHANGE) */}
           <div className="text-[11px] leading-relaxed text-zinc-600 space-y-4 text-justify border-l-2 border-zinc-800 pl-4">
             <p>
-              <strong>Corecoin is a digital asset exchange platform.</strong> While we employ institutional-grade security measures (DESM) to protect user funds, digital asset trading involves significant risk. Corecoin does not conduct any independent diligence on the individual growth potential of any blockchain asset listed on the platform.
+              <strong>CryptoChains is a digital asset exchange platform.</strong> While we employ institutional-grade security measures (DESM) to protect user funds, digital asset trading involves significant risk. CryptoChains does not conduct any independent diligence on the individual growth potential of any blockchain asset listed on the platform.
             </p>
             <p>
               You are fully and solely responsible for evaluating your investments and determining whether you will trade blockchain assets based on your own research. In many cases, blockchain assets you trade may decrease in value. Past performance is not indicative of future results.
@@ -106,21 +106,21 @@ export function Footer() {
                The value of the blockchain assets you hold is subject to market volatility. Unlike traditional bank deposits, your crypto assets are not covered by government deposit insurance schemes (such as FDIC or NDIC) unless explicitly stated for specific fiat balances.
             </p>
             <p className="font-medium text-zinc-500">
-              <strong>Security Notice:</strong> While Corecoin manages the custody of assets, you are responsible for maintaining the security of your account credentials (passwords, 2FA codes, and API keys). Corecoin will never ask for your password or 2FA code via email or social media.
+              <strong>Security Notice:</strong> While CryptoChains manages the custody of assets, you are responsible for maintaining the security of your account credentials (passwords, 2FA codes, and API keys). CryptoChains will never ask for your password or 2FA code via email or social media.
             </p>
           </div>
 
           {/* COPYRIGHT & LEGAL LINKS */}
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-t border-white/5 pt-8 mt-4">
             <div className="text-zinc-500 text-xs">
-              Copyright © 2026 Corecoin Technologies Inc. All rights reserved.
+              Copyright © 2026 CryptoChains Technologies Inc. All rights reserved.
             </div>
             
             <div className="flex gap-6 text-xs text-zinc-500 font-medium">
-               <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-               <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
-               <Link href="#" className="hover:text-white transition-colors">Trademarks</Link>
-               <Link href="#" className="hover:text-white transition-colors">Cookie Policy</Link>
+               <Link href="/company/legal" className="hover:text-white transition-colors">Privacy Policy</Link>
+               <Link href="/company/legal" className="hover:text-white transition-colors">Terms of Service</Link>
+               <Link href="/company/legal" className="hover:text-white transition-colors">Trademarks</Link>
+               <Link href="/company/legal" className="hover:text-white transition-colors">Cookie Policy</Link>
             </div>
           </div>
 
